@@ -1,0 +1,4 @@
+#include <windows.h>
+
+// Icon with lowest resource ID (ID 1)
+IDI_ICON1 ICON "assets/icon.ico"

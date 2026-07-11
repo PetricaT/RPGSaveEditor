@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=RPGSaveEditor
+Comment=RPG Maker MV Save File Editor
+Exec=RPGSaveEditor
+Icon=RPGSaveEditor
+Categories=Utility;
+Terminal=false

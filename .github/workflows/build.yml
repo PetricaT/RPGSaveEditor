@@ -1,0 +1,101 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt6 and build tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq qt6-base-dev libgl1-mesa-dev
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/staging
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Install
+        run: cmake --install build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RPGSaveEditor-linux
+          path: staging/
+
+  appimage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt6 and build tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq qt6-base-dev libgl1-mesa-dev fuse libfuse2 file
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/AppDir/usr
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Install
+        run: cmake --install build
+
+      - name: Copy desktop & icon for AppImage
+        run: |
+          cp assets/RPGSaveEditor.desktop AppDir/
+          cp assets/icon.png AppDir/
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          cp assets/icon.png AppDir/usr/share/icons/hicolor/256x256/apps/RPGSaveEditor.png
+
+      - name: Download linuxdeploy and linuxdeploy-plugin-qt
+        run: |
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+      - name: Build AppImage
+        run: |
+          export LDAI_OUTPUT=RPGSaveEditor-x86_64.AppImage
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir \
+            --plugin qt \
+            --output appimage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RPGSaveEditor-x86_64.AppImage
+          path: RPGSaveEditor-x86_64.AppImage
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7'
+          arch: 'win64_msvc2019_64'
+          modules: 'qtimageformats'
+          cache: true
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RPGSaveEditor-windows
+          path: build/Release/RPGSaveEditor.exe
