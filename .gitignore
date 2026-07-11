@@ -16,3 +16,6 @@ Thumbs.db
 __pycache__/
 *.pyc
 .venv/
+
+# Installer
+installer/packages/*/data/

@@ -28,6 +28,40 @@ jobs:
           name: RPGSaveEditor-linux
           path: staging/
 
+      - name: Set installer version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s/__VERSION__/$VERSION/" installer/config/config-linux.xml installer/packages/com.petricat.rpgsaveeditor/meta/package.xml
+
+      - name: Install Qt Installer Framework
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          host: 'linux'
+          target: 'desktop'
+          tools: 'tools_ifw'
+          tools-only: 'true'
+
+      - name: Prepare installer payload
+        run: |
+          mkdir -p installer/packages/com.petricat.rpgsaveeditor/data
+          cp staging/bin/RPGSaveEditor installer/packages/com.petricat.rpgsaveeditor/data/
+          cp assets/icon.png installer/packages/com.petricat.rpgsaveeditor/data/
+
+      - name: Build Linux installer
+        run: |
+          binarycreator --offline-only \
+            -c installer/config/config-linux.xml \
+            -p installer/packages \
+            RPGSaveEditor-Linux-Installer.run
+          chmod +x RPGSaveEditor-Linux-Installer.run
+
+      - name: Upload Linux installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RPGSaveEditor-linux-installer
+          path: RPGSaveEditor-Linux-Installer.run
+
   appimage:
     runs-on: ubuntu-latest
     steps:
@@ -75,29 +109,54 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-    
-      - name: Install Qt6
+
+      - name: Install Qt6 + Qt Installer Framework
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.7"
-          arch: "win64_msvc2019_64"
-          modules: "qtimageformats"
+          version: '6.7'
+          arch: 'win64_msvc2019_64'
+          modules: 'qtimageformats'
+          tools: 'tools_ifw'
           cache: true
-        
+
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
-        
+
       - name: Build
         run: cmake --build build --config Release
-        
+
       - name: Deploy Qt dependencies
         run: windeployqt.exe --release --no-translations build\Release\RPGSaveEditor.exe
-        
-      - name: Upload artifact
+
+      - name: Package portable zip
+        run: Compress-Archive -Path build\Release\* -DestinationPath RPGSaveEditor-windows-portable.zip
+
+      - name: Upload portable artifact
         uses: actions/upload-artifact@v4
         with:
-          name: RPGSaveEditor-windows
-          path: build/Release/ # whole folder now, not just the exe
+          name: RPGSaveEditor-windows-portable
+          path: RPGSaveEditor-windows-portable.zip
+
+      - name: Set installer version
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s/__VERSION__/$VERSION/" installer/config/config-windows.xml installer/packages/com.petricat.rpgsaveeditor/meta/package.xml
+
+      - name: Prepare installer payload
+        shell: bash
+        run: |
+          mkdir -p installer/packages/com.petricat.rpgsaveeditor/data
+          cp -r build/Release/* installer/packages/com.petricat.rpgsaveeditor/data/
+
+      - name: Build Windows installer
+        run: binarycreator.exe --offline-only -c installer\config\config-windows.xml -p installer\packages RPGSaveEditor-Windows-Installer.exe
+
+      - name: Upload Windows installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RPGSaveEditor-windows-installer
+          path: RPGSaveEditor-Windows-Installer.exe
 
   release:
     needs: [linux, appimage, windows]
@@ -115,11 +174,6 @@ jobs:
           cd artifacts/RPGSaveEditor-linux
           tar -czf ../../RPGSaveEditor-linux.tar.gz .
 
-      - name: Package windows release
-        run: |
-          cd artifacts/RPGSaveEditor-windows
-          zip -r ../../RPGSaveEditor-windows.zip .
-
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
@@ -127,4 +181,6 @@ jobs:
           files: |
             artifacts/RPGSaveEditor-x86_64.AppImage/RPGSaveEditor-x86_64.AppImage
             RPGSaveEditor-linux.tar.gz
-            RPGSaveEditor-windows.zip
+            artifacts/RPGSaveEditor-linux-installer/RPGSaveEditor-Linux-Installer.run
+            artifacts/RPGSaveEditor-windows-portable/RPGSaveEditor-windows-portable.zip
+            artifacts/RPGSaveEditor-windows-installer/RPGSaveEditor-Windows-Installer.exe

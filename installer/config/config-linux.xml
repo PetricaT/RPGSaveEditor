@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Installer>
+    <Name>RPGSaveEditor</Name>
+    <Version>__VERSION__</Version>
+    <Title>RPGSaveEditor Setup</Title>
+    <Publisher>PetricaT</Publisher>
+    <ProductUrl>https://github.com/PetricaT/RPGSaveEditor</ProductUrl>
+    <TargetDir>@ApplicationsDir@/RPGSaveEditor</TargetDir>
+    <Logo>icon.png</Logo>
+    <WizardStyle>Modern</WizardStyle>
+    <RunProgram>@TargetDir@/RPGSaveEditor</RunProgram>
+    <RunProgramDescription>Launch RPGSaveEditor</RunProgramDescription>
+</Installer>

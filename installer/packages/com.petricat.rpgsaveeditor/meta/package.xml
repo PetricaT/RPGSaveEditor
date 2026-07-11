@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>RPGSaveEditor</DisplayName>
+    <Description>A local RPGMaker save editor</Description>
+    <Version>__VERSION__</Version>
+    <ReleaseDate>2026-07-11</ReleaseDate>
+    <Default>true</Default>
+    <ForcedInstallation>true</ForcedInstallation>
+    <Script>installscript.qs</Script>
+</Package>
