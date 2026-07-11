@@ -19,3 +19,4 @@ __pycache__/
 
 # Installer
 installer/packages/*/data/
+*.run
