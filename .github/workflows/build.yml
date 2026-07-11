@@ -1,11 +1,8 @@
-name: Build
+name: Build & Release
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
+    tags: [ "v*.*.0" ]
 
 jobs:
 
@@ -99,3 +96,28 @@ jobs:
         with:
           name: RPGSaveEditor-windows
           path: build/Release/RPGSaveEditor.exe
+
+  release:
+    needs: [ linux, appimage, windows ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Package linux release
+        run: |
+          cd artifacts/RPGSaveEditor-linux
+          tar -czf ../../RPGSaveEditor-linux.tar.gz .
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/RPGSaveEditor-x86_64.AppImage/RPGSaveEditor-x86_64.AppImage
+            RPGSaveEditor-linux.tar.gz
+            artifacts/RPGSaveEditor-windows/RPGSaveEditor.exe

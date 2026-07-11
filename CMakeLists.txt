@@ -34,12 +34,18 @@ FetchContent_MakeAvailable(rapidfuzz)
 set(SOURCES
     src/main.cpp
     src/mainwindow.cpp
+    src/tabs.cpp
+    src/fileops.cpp
+    src/helpers.cpp
     src/rpgsave.cpp
+    src/loadsave.cpp
+    src/writesave.cpp
     src/json_model.cpp
 )
 
 set(HEADERS
     src/mainwindow.h
+    src/helpers.h
     src/rpgsave.h
     src/json_model.h
     src/lz_string.hpp
