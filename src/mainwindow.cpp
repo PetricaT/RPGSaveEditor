@@ -4,6 +4,8 @@
 
 #include <QApplication>
 #include <QComboBox>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QFileDialog>
@@ -183,18 +185,29 @@ void MainWindow::updateLocaleCombo()
 
 void MainWindow::onAbout()
 {
-    QMessageBox box(this);
-    box.setWindowTitle("About RPGSaveEditor");
-    box.setTextFormat(Qt::RichText);
-    box.setText(
+    QDialog dlg(this);
+    dlg.setWindowTitle("About RPGSaveEditor");
+
+    auto* layout = new QVBoxLayout(&dlg);
+
+    auto* label = new QLabel(
         "<p>RPGSaveEditor v1.0</p>"
         "<p>A cross-platform RPG Maker MV save file editor.</p>"
         "<p>Drag &amp; drop a game root folder or .rpgsave file.<br>"
         "Saves are written to a new slot to prevent overwriting.</p>"
         "<hr>"
         "<p>Author: <a href=\"https://github.com/PetricaT\">PetricaT</a></p>");
-    box.setStandardButtons(QMessageBox::Ok);
-    box.exec();
+    label->setTextFormat(Qt::RichText);
+    label->setOpenExternalLinks(true);
+    label->setWordWrap(true);
+    layout->addWidget(label);
+
+    auto* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+    layout->addWidget(buttonBox);
+    QObject::connect(buttonBox, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+
+    dlg.setMinimumWidth(400);
+    dlg.exec();
 }
 
 // --- Helpers ---
