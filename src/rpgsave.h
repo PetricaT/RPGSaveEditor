@@ -34,9 +34,10 @@ public:
     void setActiveLocale(const QString& locale);
     QString activeLocale() const { return m_activeLocale; }
 
-    bool isLoaded() const { return m_loaded; }
+    bool isLoaded() const { return m_bLoaded; }
     QString filePath() const { return m_filePath; }
     QString errorString() const { return m_error; }
+    void reset();
 
     json& root() { return m_root; }
     const json& root() const { return m_root; }
@@ -71,10 +72,10 @@ public:
     void setActor(int id, const json& actor);
 
     // Maximum IDs from game data (for showing all possible items)
-    int maxItemId() const { return m_maxItemId; }
-    int maxWeaponId() const { return m_maxWeaponId; }
-    int maxArmorId() const { return m_maxArmorId; }
-    int maxActorId() const { return m_maxActorId; }
+    int maxItemId() const { return m_iMaxItemId; }
+    int maxWeaponId() const { return m_iMaxWeaponId; }
+    int maxArmorId() const { return m_iMaxArmorId; }
+    int maxActorId() const { return m_iMaxActorId; }
 
     // Item/weapon/armor name lookups
     QString itemName(int id) const;
@@ -109,7 +110,7 @@ private:
     // Build display names from active locale, falling back to native names
     void rebuildDisplayNames();
 
-    bool m_loaded = false;
+    bool m_bLoaded = false;
     QString m_filePath;
     QString m_error;
     json m_root;
@@ -127,10 +128,10 @@ private:
     QMap<int, QString> m_switchNames;
 
     // Maximum valid IDs from Items/Weapons/Armors/Actors.json
-    int m_maxItemId = 0;
-    int m_maxWeaponId = 0;
-    int m_maxArmorId = 0;
-    int m_maxActorId = 0;
+    int m_iMaxItemId = 0;
+    int m_iMaxWeaponId = 0;
+    int m_iMaxArmorId = 0;
+    int m_iMaxActorId = 0;
 
     // Item/weapon/armor/actor names (always from game data, not translated)
     QMap<int, QString> m_itemNames;

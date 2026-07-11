@@ -5,8 +5,7 @@
 #include <iostream>
 #include <cstdlib>
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]){
     std::set_terminate([]() {
         try {
             std::exception_ptr eptr = std::current_exception();

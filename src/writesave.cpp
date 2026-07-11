@@ -4,12 +4,11 @@
 #include <QFile>
 #include <QFileInfo>
 
-static int try_write_stoi(const std::string& s, int fallback = 0)
-{
+static int try_write_stoi(const std::string& s, int iFallback = 0){
     try {
         return std::stoi(s);
     } catch (...) {
-        return fallback;
+        return iFallback;
     }
 }
 
@@ -25,8 +24,7 @@ enum class SaveFormat {
     // Rm2k,      // .lsd    (LSD binary)
 };
 
-static SaveFormat detectFormat(const QString& filePath)
-{
+static SaveFormat detectFormat(const QString& filePath){
     QString suffix = QFileInfo(filePath).suffix().toLower();
     if (suffix == "rpgsave" || suffix == "rmmzsave")
         return SaveFormat::MvMz;
@@ -35,8 +33,7 @@ static SaveFormat detectFormat(const QString& filePath)
 
 // --- Save ---
 
-bool RPGSave::saveToFile(const QString& filePath)
-{
+bool RPGSave::saveToFile(const QString& filePath){
     LOG_DEBUG("saveToFile: {}", filePath.toStdString());
 
     SaveFormat format = detectFormat(filePath);
@@ -88,103 +85,94 @@ bool RPGSave::saveToFile(const QString& filePath)
 
 // --- Variable setters ---
 
-void RPGSave::setVariable(int id, const json& value)
-{
+void RPGSave::setVariable(int iId, const json& value){
     if (!m_root.contains("variables")) return;
-    auto arr = extractSparseArray(m_root["variables"]);
-    if (id >= 0 && id < static_cast<int>(arr.size())) {
-        arr[id] = value;
-        m_root["variables"]["_data"] = buildSparseArray(arr);
+    auto aArr = extractSparseArray(m_root["variables"]);
+    if (iId >= 0 && iId < static_cast<int>(aArr.size())) {
+        aArr[iId] = value;
+        m_root["variables"]["_data"] = buildSparseArray(aArr);
         emit modified();
     }
 }
 
-void RPGSave::setSwitch(int id, bool value)
-{
+void RPGSave::setSwitch(int iId, bool bValue){
     if (!m_root.contains("switches")) return;
-    auto arr = extractSparseArray(m_root["switches"]);
-    if (id >= 0 && id < static_cast<int>(arr.size())) {
-        arr[id] = value;
-        m_root["switches"]["_data"] = buildSparseArray(arr);
+    auto aArr = extractSparseArray(m_root["switches"]);
+    if (iId >= 0 && iId < static_cast<int>(aArr.size())) {
+        aArr[iId] = bValue;
+        m_root["switches"]["_data"] = buildSparseArray(aArr);
         emit modified();
     }
 }
 
 // --- Party setters ---
 
-void RPGSave::setGold(int amount)
-{
+void RPGSave::setGold(int iAmount){
     if (m_root.contains("party")) {
-        m_root["party"]["_gold"] = amount;
+        m_root["party"]["_gold"] = iAmount;
         emit modified();
     }
 }
 
-void RPGSave::setSteps(int amount)
-{
+void RPGSave::setSteps(int iAmount){
     if (m_root.contains("party")) {
-        m_root["party"]["_steps"] = amount;
+        m_root["party"]["_steps"] = iAmount;
         emit modified();
     }
 }
 
-void RPGSave::setItem(int itemId, int quantity)
-{
+void RPGSave::setItem(int iItemId, int iQuantity){
     if (!m_root.contains("party")) return;
     if (!m_root["party"].contains("_items") || !m_root["party"]["_items"].is_object()) {
         m_root["party"]["_items"] = json::object();
     }
-    m_root["party"]["_items"][std::to_string(itemId)] = quantity;
+    m_root["party"]["_items"][std::to_string(iItemId)] = iQuantity;
     emit modified();
 }
 
-void RPGSave::setWeapon(int weaponId, int quantity)
-{
+void RPGSave::setWeapon(int iWeaponId, int iQuantity){
     if (!m_root.contains("party")) return;
     if (!m_root["party"].contains("_weapons") || !m_root["party"]["_weapons"].is_object()) {
         m_root["party"]["_weapons"] = json::object();
     }
-    m_root["party"]["_weapons"][std::to_string(weaponId)] = quantity;
+    m_root["party"]["_weapons"][std::to_string(iWeaponId)] = iQuantity;
     emit modified();
 }
 
-void RPGSave::setArmor(int armorId, int quantity)
-{
+void RPGSave::setArmor(int iArmorId, int iQuantity){
     if (!m_root.contains("party")) return;
     if (!m_root["party"].contains("_armors") || !m_root["party"]["_armors"].is_object()) {
         m_root["party"]["_armors"] = json::object();
     }
-    m_root["party"]["_armors"][std::to_string(armorId)] = quantity;
+    m_root["party"]["_armors"][std::to_string(iArmorId)] = iQuantity;
     emit modified();
 }
 
 // --- Actor setter ---
 
-void RPGSave::setActor(int id, const json& actor)
-{
+void RPGSave::setActor(int iId, const json& actor){
     if (!m_root.contains("actors")) return;
-    auto arr = extractSparseArray(m_root["actors"]);
-    if (id >= 0 && id < static_cast<int>(arr.size())) {
-        arr[id] = actor;
-        m_root["actors"]["_data"] = buildSparseArray(arr);
+    auto aArr = extractSparseArray(m_root["actors"]);
+    if (iId >= 0 && iId < static_cast<int>(aArr.size())) {
+        aArr[iId] = actor;
+        m_root["actors"]["_data"] = buildSparseArray(aArr);
         emit modified();
     }
 }
 
 // --- Export ---
 
-bool RPGSave::exportTranslationTemplate(const QString& path)
-{
+bool RPGSave::exportTranslationTemplate(const QString& path){
     LOG_INFO("exportTranslationTemplate: {}", path.toStdString());
     json out;
     out["variables"] = json::object();
     out["switches"] = json::object();
 
-    for (auto it = m_nativeVariableNames.constBegin(); it != m_nativeVariableNames.constEnd(); ++it) {
-        out["variables"][std::to_string(it.key())] = it.value().toStdString();
+    for (auto aIt = m_nativeVariableNames.constBegin(); aIt != m_nativeVariableNames.constEnd(); ++aIt) {
+        out["variables"][std::to_string(aIt.key())] = aIt.value().toStdString();
     }
-    for (auto it = m_nativeSwitchNames.constBegin(); it != m_nativeSwitchNames.constEnd(); ++it) {
-        out["switches"][std::to_string(it.key())] = it.value().toStdString();
+    for (auto aIt = m_nativeSwitchNames.constBegin(); aIt != m_nativeSwitchNames.constEnd(); ++aIt) {
+        out["switches"][std::to_string(aIt.key())] = aIt.value().toStdString();
     }
 
     QFile file(path);

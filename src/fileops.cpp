@@ -10,8 +10,7 @@
 
 // --- Drag and Drop ---
 
-void MainWindow::handleDrop(const QString& path)
-{
+void MainWindow::handleDrop(const QString& path){
     LOG_INFO("handleDrop: {}", path.toStdString());
     QFileInfo fi(path);
 
@@ -59,8 +58,7 @@ void MainWindow::handleDrop(const QString& path)
 
 // --- File operations ---
 
-void MainWindow::onSave()
-{
+void MainWindow::onSave(){
     if (!m_save.isLoaded()) {
         QMessageBox::information(this, "Nothing to Save", "No save file is loaded.");
         return;
@@ -72,6 +70,7 @@ void MainWindow::onSave()
     }
     LOG_INFO("Saving to current file: {}", savePath.toStdString());
     if (m_save.saveToFile(savePath)) {
+        m_bDirty = false;
         setStatus(QString("Saved to %1").arg(savePath));
         setTitle();
     } else {
@@ -79,20 +78,20 @@ void MainWindow::onSave()
     }
 }
 
-void MainWindow::onSaveAs()
-{
+void MainWindow::onSaveAs(){
     if (!m_save.isLoaded()) {
         QMessageBox::information(this, "Nothing to Save", "No save file is loaded.");
         return;
     }
-    int nextSlot = getNextSaveSlot(m_saveDir);
-    if (nextSlot > 99) nextSlot = 99;
-    QString defaultPath = getSaveSlotPath(m_saveDir, nextSlot);
+    int iNextSlot = getNextSaveSlot(m_saveDir);
+    if (iNextSlot > 99) iNextSlot = 99;
+    QString defaultPath = getSaveSlotPath(m_saveDir, iNextSlot);
     QString path = QFileDialog::getSaveFileName(
         this, "Save As", defaultPath,
         "RPG Maker Saves (*.rpgsave *.rmmzsave);;All Files (*)");
     if (!path.isEmpty()) {
         if (m_save.saveToFile(path)) {
+            m_bDirty = false;
             setStatus(QString("Saved to %1").arg(path));
             setTitle();
         } else {
@@ -101,8 +100,7 @@ void MainWindow::onSaveAs()
     }
 }
 
-void MainWindow::onLoadGameData()
-{
+void MainWindow::onLoadGameData(){
     QString gameRoot = QFileDialog::getExistingDirectory(
         this, "Select Game Root Folder");
     if (gameRoot.isEmpty()) return;
@@ -111,8 +109,7 @@ void MainWindow::onLoadGameData()
     if (m_save.isLoaded()) populateAllTabs();
 }
 
-void MainWindow::onLoadTranslations()
-{
+void MainWindow::onLoadTranslations(){
     QString path = QFileDialog::getOpenFileName(
         this, "Load Translation File", {},
         "Translation JSON (*.json);;All Files (*)");
@@ -126,8 +123,7 @@ void MainWindow::onLoadTranslations()
     }
 }
 
-void MainWindow::onExportTranslationTemplate()
-{
+void MainWindow::onExportTranslationTemplate(){
     if (!m_save.isLoaded()) {
         QMessageBox::information(this, "Nothing to Export",
             "Load a save file first to export variable/switch names.");
@@ -151,8 +147,7 @@ void MainWindow::onExportTranslationTemplate()
 
 // --- Core load logic ---
 
-void MainWindow::loadFromGameRoot(const QString& gameRoot)
-{
+void MainWindow::loadFromGameRoot(const QString& gameRoot){
     LOG_INFO("loadFromGameRoot: {}", gameRoot.toStdString());
 
     QString saveDir = saveDirFromRoot(gameRoot);
@@ -162,8 +157,8 @@ void MainWindow::loadFromGameRoot(const QString& gameRoot)
         return;
     }
 
-    auto saves = findRPGSaveFiles(saveDir);
-    if (saves.isEmpty()) {
+    auto aSaves = findRPGSaveFiles(saveDir);
+    if (aSaves.isEmpty()) {
         LOG_ERROR("No save files found in {}", saveDir.toStdString());
         QMessageBox::warning(this, "Error", "No save files found in the save directory.");
         return;
@@ -173,20 +168,19 @@ void MainWindow::loadFromGameRoot(const QString& gameRoot)
     m_gameRoot = gameRoot;
 
     QString savePath;
-    if (saves.size() == 1) {
-        savePath = saves.first();
+    if (aSaves.size() == 1) {
+        savePath = aSaves.first();
     } else {
-        int idx = askUserForSaveSlot(saves);
-        if (idx < 0) return;
-        savePath = saves[idx];
+        int iIdx = askUserForSaveSlot(aSaves);
+        if (iIdx < 0) return;
+        savePath = aSaves[iIdx];
     }
 
     LOG_INFO("Selected save: {}", savePath.toStdString());
     loadFromSaveFile(savePath);
 }
 
-void MainWindow::loadFromSaveFile(const QString& saveFilePath)
-{
+void MainWindow::loadFromSaveFile(const QString& saveFilePath){
     LOG_INFO("loadFromSaveFile: {}", saveFilePath.toStdString());
 
     if (!m_save.loadFromFile(saveFilePath)) {
@@ -222,8 +216,7 @@ void MainWindow::loadFromSaveFile(const QString& saveFilePath)
     LOG_INFO("Save loaded successfully");
 }
 
-void MainWindow::loadGameDataFromRoot(const QString& gameRoot)
-{
+void MainWindow::loadGameDataFromRoot(const QString& gameRoot){
     LOG_INFO("loadGameDataFromRoot: {}", gameRoot.toStdString());
     QString dataPath = gameDataPathFromRoot(gameRoot);
     if (dataPath.isEmpty()) {

@@ -9,39 +9,35 @@ struct JsonModel::JsonNode {
     std::vector<JsonNode*> children;
 
     JsonNode(const json& val = nullptr, const std::string& k = "", JsonNode* p = nullptr)
-        : value(val), key(k), parent(p)
-    {
+        : value(val), key(k), parent(p){
     }
 
-    ~JsonNode()
-    {
-        for (auto* child : children) {
-            delete child;
+    ~JsonNode(){
+        for (auto* aChild : children) {
+            delete aChild;
         }
     }
 
-    void buildChildren()
-    {
-        for (auto* c : children) delete c;
+    void buildChildren(){
+        for (auto* aC : children) delete aC;
         children.clear();
 
         if (value.is_object()) {
-            for (auto it = value.begin(); it != value.end(); ++it) {
-                auto* child = new JsonNode(*it, it.key(), this);
-                child->buildChildren();
-                children.push_back(child);
+            for (auto aIt = value.begin(); aIt != value.end(); ++aIt) {
+                auto* aChild = new JsonNode(*aIt, aIt.key(), this);
+                aChild->buildChildren();
+                children.push_back(aChild);
             }
         } else if (value.is_array()) {
             for (size_t i = 0; i < value.size(); ++i) {
-                auto* child = new JsonNode(value[i], std::to_string(i), this);
-                child->buildChildren();
-                children.push_back(child);
+                auto* aChild = new JsonNode(value[i], std::to_string(i), this);
+                aChild->buildChildren();
+                children.push_back(aChild);
             }
         }
     }
 
-    int childIndex() const
-    {
+    int childIndex() const{
         if (!parent) return 0;
         for (int i = 0; i < static_cast<int>(parent->children.size()); ++i) {
             if (parent->children[i] == this) return i;
@@ -49,8 +45,7 @@ struct JsonModel::JsonNode {
         return 0;
     }
 
-    void updateParentValue()
-    {
+    void updateParentValue(){
         if (!parent) return;
 
         if (parent->value.is_object()) {
@@ -67,17 +62,14 @@ struct JsonModel::JsonNode {
 };
 
 JsonModel::JsonModel(QObject* parent)
-    : QAbstractItemModel(parent)
-{
+    : QAbstractItemModel(parent){
 }
 
-JsonModel::~JsonModel()
-{
+JsonModel::~JsonModel(){
     delete m_rootNode;
 }
 
-void JsonModel::setJson(const json& root)
-{
+void JsonModel::setJson(const json& root){
     beginResetModel();
     delete m_rootNode;
     m_rootNode = new JsonNode(root, "root", nullptr);
@@ -85,35 +77,31 @@ void JsonModel::setJson(const json& root)
     endResetModel();
 }
 
-void JsonModel::clear()
-{
+void JsonModel::clear(){
     beginResetModel();
     delete m_rootNode;
     m_rootNode = nullptr;
     endResetModel();
 }
 
-JsonModel::JsonNode* JsonModel::nodeFromIndex(const QModelIndex& index) const
-{
+JsonModel::JsonNode* JsonModel::nodeFromIndex(const QModelIndex& index) const{
     if (!index.isValid()) return m_rootNode;
     return static_cast<JsonNode*>(index.internalPointer());
 }
 
-QModelIndex JsonModel::index(int row, int column, const QModelIndex& parent) const
-{
+QModelIndex JsonModel::index(int iRow, int iColumn, const QModelIndex& parent) const{
     if (!m_rootNode) return {};
-    if (column != 0) return {};
+    if (iColumn != 0) return {};
 
     JsonNode* parentNode = nodeFromIndex(parent);
     if (!parentNode) parentNode = m_rootNode;
 
-    if (row < 0 || row >= static_cast<int>(parentNode->children.size())) return {};
+    if (iRow < 0 || iRow >= static_cast<int>(parentNode->children.size())) return {};
 
-    return createIndex(row, 0, parentNode->children[row]);
+    return createIndex(iRow, 0, parentNode->children[iRow]);
 }
 
-QModelIndex JsonModel::parent(const QModelIndex& index) const
-{
+QModelIndex JsonModel::parent(const QModelIndex& index) const{
     if (!index.isValid()) return {};
 
     JsonNode* node = nodeFromIndex(index);
@@ -122,21 +110,18 @@ QModelIndex JsonModel::parent(const QModelIndex& index) const
     return createIndex(node->parent->childIndex(), 0, node->parent);
 }
 
-int JsonModel::rowCount(const QModelIndex& parent) const
-{
+int JsonModel::rowCount(const QModelIndex& parent) const{
     if (!m_rootNode) return 0;
     JsonNode* node = nodeFromIndex(parent);
     if (!node) node = m_rootNode;
     return static_cast<int>(node->children.size());
 }
 
-int JsonModel::columnCount(const QModelIndex& /*parent*/) const
-{
+int JsonModel::columnCount(const QModelIndex& /*parent*/) const{
     return 2; // key + value
 }
 
-QVariant JsonModel::data(const QModelIndex& index, int role) const
-{
+QVariant JsonModel::data(const QModelIndex& index, int role) const{
     if (!index.isValid() || !m_rootNode) return {};
 
     JsonNode* node = nodeFromIndex(index);
@@ -182,16 +167,14 @@ QVariant JsonModel::data(const QModelIndex& index, int role) const
     return {};
 }
 
-QVariant JsonModel::headerData(int section, Qt::Orientation orientation, int role) const
-{
+QVariant JsonModel::headerData(int section, Qt::Orientation orientation, int role) const{
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
         return section == 0 ? "Key" : "Value";
     }
     return {};
 }
 
-bool JsonModel::setData(const QModelIndex& index, const QVariant& value, int role)
-{
+bool JsonModel::setData(const QModelIndex& index, const QVariant& value, int role){
     if (!index.isValid() || !m_rootNode) return false;
 
     JsonNode* node = nodeFromIndex(index);
@@ -254,8 +237,7 @@ bool JsonModel::setData(const QModelIndex& index, const QVariant& value, int rol
     return false;
 }
 
-Qt::ItemFlags JsonModel::flags(const QModelIndex& index) const
-{
+Qt::ItemFlags JsonModel::flags(const QModelIndex& index) const{
     if (!index.isValid()) return Qt::NoItemFlags;
 
     Qt::ItemFlags f = Qt::ItemIsEnabled | Qt::ItemIsSelectable;
@@ -275,8 +257,7 @@ Qt::ItemFlags JsonModel::flags(const QModelIndex& index) const
     return f;
 }
 
-json JsonModel::getJson() const
-{
+json JsonModel::getJson() const{
     if (m_rootNode) return m_rootNode->value;
     return nullptr;
 }

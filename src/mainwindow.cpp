@@ -3,6 +3,7 @@
 #include "logger.h"
 
 #include <QApplication>
+#include <QCloseEvent>
 #include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -13,8 +14,10 @@
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QInputDialog>
+#include <QFont>
 #include <QLabel>
 #include <QMenu>
+#include <QPalette>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QMimeData>
@@ -25,11 +28,11 @@
 #include <QWidgetAction>
 
 MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent)
-{
+    : QMainWindow(parent){
     LOG_INFO("MainWindow constructor");
     setAcceptDrops(true);
     setWindowIcon(QIcon(":/appicon.png"));
+    connect(&m_save, &RPGSave::modified, this, [this]() { m_bDirty = true; });
     setupUI();
     setupMenuBar();
     setupStatusBar();
@@ -37,22 +40,39 @@ MainWindow::MainWindow(QWidget* parent)
     LOG_INFO("MainWindow ready");
 }
 
-void MainWindow::setupUI()
-{
+void MainWindow::setupUI(){
     m_stacked = new QStackedWidget(this);
     setCentralWidget(m_stacked);
 
     m_welcomeWidget = new QWidget;
-    auto* wl = new QVBoxLayout(m_welcomeWidget);
-    wl->setAlignment(Qt::AlignCenter);
-    auto* label = new QLabel("Drag & drop a game folder or .rpgsave file here");
-    label->setAlignment(Qt::AlignCenter);
-    label->setStyleSheet("font-size: 18px; color: #888;");
-    auto* sub = new QLabel("Or use File > Open to browse");
-    sub->setAlignment(Qt::AlignCenter);
-    sub->setStyleSheet("font-size: 14px; color: #666;");
-    wl->addWidget(label);
-    wl->addWidget(sub);
+    auto* aWl = new QVBoxLayout(m_welcomeWidget);
+    aWl->setAlignment(Qt::AlignCenter);
+    // Title
+    auto* aLabel = new QLabel("Drag & drop a game folder or RPGMaker save file here");
+    aLabel->setAlignment(Qt::AlignCenter);
+    QFont lf = aLabel->font();
+    lf.setPointSize(18);
+    aLabel->setFont(lf);
+    aLabel->setForegroundRole(QPalette::Text);
+    // Subtitle
+    auto* aSubTitle = new QLabel("Or use File > Open to browse");
+    aSubTitle->setAlignment(Qt::AlignCenter);
+    QFont subTitleFont = aSubTitle->font();
+    subTitleFont.setPointSize(14);
+    aSubTitle->setFont(subTitleFont);
+    aSubTitle->setForegroundRole(QPalette::PlaceholderText);
+    // Supported file formats
+    auto* aFileFormats = new QLabel("Supported file formats: .rpgsave");
+    aFileFormats->setAlignment(Qt::AlignCenter);
+    QFont fileFormatFont = aFileFormats->font();
+    fileFormatFont.setPointSize(12);
+    aFileFormats->setFont(fileFormatFont);
+    aFileFormats->setForegroundRole(QPalette::PlaceholderText);
+    // Finishing touches
+    aWl->addWidget(aLabel);
+    aWl->addWidget(aSubTitle);
+    aWl->addWidget(aFileFormats);
+
     m_stacked->addWidget(m_welcomeWidget);
 
     m_tabs = new QTabWidget;
@@ -63,75 +83,81 @@ void MainWindow::setupUI()
     resize(1000, 700);
 }
 
-void MainWindow::setupMenuBar()
-{
-    auto* fileMenu = menuBar()->addMenu("&File");
+void MainWindow::setupMenuBar(){
+    auto* aFileMenu = menuBar()->addMenu("&File");
 
-    auto* openAction = fileMenu->addAction("&Open...");
-    openAction->setShortcut(QKeySequence::Open);
-    connect(openAction, &QAction::triggered, this, [this]() {
+    auto* aOpenAction = aFileMenu->addAction("&Open...");
+    aOpenAction->setShortcut(QKeySequence::Open);
+    connect(aOpenAction, &QAction::triggered, this, [this]() {
         QString path = QFileDialog::getOpenFileName(
             this, "Open RPG Maker Save File", {},
             "RPG Maker Saves (*.rpgsave *.rmmzsave);;All Files (*)");
         if (!path.isEmpty()) handleDrop(path);
     });
 
-    fileMenu->addSeparator();
+    aFileMenu->addSeparator();
 
-    auto* saveAction = fileMenu->addAction("&Save");
-    saveAction->setShortcut(QKeySequence::Save);
-    connect(saveAction, &QAction::triggered, this, &MainWindow::onSave);
+    auto* aSaveAction = aFileMenu->addAction("&Save");
+    aSaveAction->setShortcut(QKeySequence::Save);
+    connect(aSaveAction, &QAction::triggered, this, &MainWindow::onSave);
 
-    auto* saveAsAction = fileMenu->addAction("Save &As...");
-    saveAsAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
-    connect(saveAsAction, &QAction::triggered, this, &MainWindow::onSaveAs);
+    auto* aSaveAsAction = aFileMenu->addAction("Save &As...");
+    aSaveAsAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
+    connect(aSaveAsAction, &QAction::triggered, this, &MainWindow::onSaveAs);
 
-    fileMenu->addSeparator();
+    auto* aCloseAction = aFileMenu->addAction("&Close");
+    aCloseAction->setShortcut(QKeySequence::Close);
+    connect(aCloseAction, &QAction::triggered, this, &MainWindow::onClose);
 
-    auto* loadGameDataAction = fileMenu->addAction("Load Game &Data...");
-    connect(loadGameDataAction, &QAction::triggered, this, &MainWindow::onLoadGameData);
+    aFileMenu->addSeparator();
 
-    auto* loadTransAction = fileMenu->addAction("Load &Translations...");
-    connect(loadTransAction, &QAction::triggered, this, &MainWindow::onLoadTranslations);
+    auto* aLoadGameDataAction = aFileMenu->addAction("Load Game &Data...");
+    connect(aLoadGameDataAction, &QAction::triggered, this, &MainWindow::onLoadGameData);
 
-    auto* exportTransTemplateAction = fileMenu->addAction("Export Translation &Template...");
-    connect(exportTransTemplateAction, &QAction::triggered, this, &MainWindow::onExportTranslationTemplate);
+    auto* aLoadTransAction = aFileMenu->addAction("Load &Translations...");
+    connect(aLoadTransAction, &QAction::triggered, this, &MainWindow::onLoadTranslations);
 
-    fileMenu->addSeparator();
+    auto* aExportTransTemplateAction = aFileMenu->addAction("Export Translation &Template...");
+    connect(aExportTransTemplateAction, &QAction::triggered, this, &MainWindow::onExportTranslationTemplate);
 
-    auto* quitAction = fileMenu->addAction("&Quit");
-    quitAction->setShortcut(QKeySequence::Quit);
-    connect(quitAction, &QAction::triggered, qApp, &QApplication::quit);
+    aFileMenu->addSeparator();
 
-    auto* viewMenu = menuBar()->addMenu("&View");
+    auto* aQuitAction = aFileMenu->addAction("&Quit");
+    aQuitAction->setShortcut(QKeySequence::Quit);
+    connect(aQuitAction, &QAction::triggered, qApp, &QApplication::quit);
 
-    auto* localeLabel = new QAction("Locale:", this);
-    localeLabel->setDisabled(true);
-    viewMenu->addAction(localeLabel);
+    auto* aViewMenu = menuBar()->addMenu("&View");
+
+    auto* aLocaleLabel = new QAction("Locale:", this);
+    aLocaleLabel->setDisabled(true);
+    aViewMenu->addAction(aLocaleLabel);
 
     m_localeCombo = new QComboBox;
     m_localeCombo->addItem("Native", "native");
-    auto* localeWidget = new QWidgetAction(this);
-    localeWidget->setDefaultWidget(m_localeCombo);
-    viewMenu->addAction(localeWidget);
+    auto* aLocaleWidget = new QWidgetAction(this);
+    aLocaleWidget->setDefaultWidget(m_localeCombo);
+    aViewMenu->addAction(aLocaleWidget);
 
     connect(m_localeCombo, &QComboBox::currentIndexChanged, this, &MainWindow::onLocaleChanged);
     connect(&m_save, &RPGSave::localeChanged, this, [this](const QString&) {
         if (m_save.isLoaded()) populateAllTabs();
     });
 
-    auto* helpMenu = menuBar()->addMenu("&Help");
-    auto* aboutAction = helpMenu->addAction("&About");
-    connect(aboutAction, &QAction::triggered, this, &MainWindow::onAbout);
+    auto* aHelpMenu = menuBar()->addMenu("&Help");
+    auto* aAboutAction = aHelpMenu->addAction("&About");
+    connect(aAboutAction, &QAction::triggered, this, &MainWindow::onAbout);
 }
 
-void MainWindow::setupStatusBar()
-{
+void MainWindow::setupStatusBar(){
     m_statusLabel = new QLabel("Ready");
     statusBar()->addWidget(m_statusLabel);
 
     m_warningLabel = new QLabel("\u26A0");
-    m_warningLabel->setStyleSheet("color: #e6a817; font-size: 16px; font-weight: bold;");
+    QFont wf = m_warningLabel->font();
+    wf.setPointSize(16);
+    wf.setBold(true);
+    m_warningLabel->setFont(wf);
+    m_warningLabel->setForegroundRole(QPalette::BrightText);
     m_warningLabel->setToolTip("This folder may not be a valid RPG Maker game distribution");
     m_warningLabel->setCursor(Qt::ArrowCursor);
     m_warningLabel->hide();
@@ -140,71 +166,66 @@ void MainWindow::setupStatusBar()
 
 // --- Drag and Drop events ---
 
-void MainWindow::dragEnterEvent(QDragEnterEvent* event)
-{
+void MainWindow::dragEnterEvent(QDragEnterEvent* event){
     if (event->mimeData()->hasUrls()) {
         event->acceptProposedAction();
     }
 }
 
-void MainWindow::dropEvent(QDropEvent* event)
-{
-    const auto urls = event->mimeData()->urls();
-    if (urls.isEmpty()) return;
-    handleDrop(urls.first().toLocalFile());
+void MainWindow::dropEvent(QDropEvent* event){
+    const auto aUrls = event->mimeData()->urls();
+    if (aUrls.isEmpty()) return;
+    handleDrop(aUrls.first().toLocalFile());
 }
 
 // --- Locale ---
 
-void MainWindow::onLocaleChanged(int index)
-{
-    if (index < 0) return;
-    QString locale = m_localeCombo->itemData(index).toString();
+void MainWindow::onLocaleChanged(int iIndex){
+    if (iIndex < 0) return;
+    QString locale = m_localeCombo->itemData(iIndex).toString();
     LOG_INFO("Locale changed to: {}", locale.toStdString());
     m_save.setActiveLocale(locale);
 }
 
-void MainWindow::updateLocaleCombo()
-{
+void MainWindow::updateLocaleCombo(){
     m_localeCombo->blockSignals(true);
     m_localeCombo->clear();
 
     QStringList locales = m_save.availableLocales();
-    int selectIdx = 0;
+    int iSelectIdx = 0;
     for (int i = 0; i < locales.size(); ++i) {
         QString display = locales[i];
-        if (display == "native") display = "Native (Japanese)";
+        if (display == "native") display = "Native";
         m_localeCombo->addItem(display, locales[i]);
-        if (locales[i] == m_save.activeLocale()) selectIdx = i;
+        if (locales[i] == m_save.activeLocale()) iSelectIdx = i;
     }
-    m_localeCombo->setCurrentIndex(selectIdx);
+    m_localeCombo->setCurrentIndex(iSelectIdx);
     m_localeCombo->blockSignals(false);
 }
 
 // --- About ---
 
-void MainWindow::onAbout()
-{
+void MainWindow::onAbout(){
     QDialog dlg(this);
     dlg.setWindowTitle("About RPGSaveEditor");
 
-    auto* layout = new QVBoxLayout(&dlg);
+    auto* aLayout = new QVBoxLayout(&dlg);
 
-    auto* label = new QLabel(
+    auto* aLabel = new QLabel(
         "<p>RPGSaveEditor v1.0</p>"
         "<p>A cross-platform RPG Maker MV save file editor.</p>"
         "<p>Drag &amp; drop a game root folder or .rpgsave file.<br>"
         "Saves are written to a new slot to prevent overwriting.</p>"
         "<hr>"
         "<p>Author: <a href=\"https://github.com/PetricaT\">PetricaT</a></p>");
-    label->setTextFormat(Qt::RichText);
-    label->setOpenExternalLinks(true);
-    label->setWordWrap(true);
-    layout->addWidget(label);
+    aLabel->setTextFormat(Qt::RichText);
+    aLabel->setOpenExternalLinks(true);
+    aLabel->setWordWrap(true);
+    aLayout->addWidget(aLabel);
 
-    auto* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
-    layout->addWidget(buttonBox);
-    QObject::connect(buttonBox, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    auto* aButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+    aLayout->addWidget(aButtonBox);
+    QObject::connect(aButtonBox, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
 
     dlg.setMinimumWidth(400);
     dlg.exec();
@@ -212,31 +233,73 @@ void MainWindow::onAbout()
 
 // --- Helpers ---
 
-int MainWindow::askUserForSaveSlot(const QStringList& saves)
-{
+int MainWindow::askUserForSaveSlot(const QStringList& saves){
     QStringList items;
-    for (const auto& s : saves) {
-        items << QFileInfo(s).fileName();
+    for (const auto& aS : saves) {
+        items << QFileInfo(aS).fileName();
     }
-    bool ok = false;
+    bool bOk = false;
     QString item = QInputDialog::getItem(this, "Select Save Slot",
         "Multiple save files found. Which one to load?",
-        items, 0, false, &ok);
-    if (!ok || item.isEmpty()) return -1;
+        items, 0, false, &bOk);
+    if (!bOk || item.isEmpty()) return -1;
     return saves.indexOf(QDir(m_saveDir).absoluteFilePath(item));
 }
 
-void MainWindow::setTitle()
-{
-    if (m_save.isLoaded()) {
-        setWindowTitle(QString("RPGSaveEditor - %1").arg(m_save.filePath()));
-    } else {
-        setWindowTitle("RPGSaveEditor");
-    }
+void MainWindow::setTitle(){
+    setWindowTitle("RPGSaveEditor");
+    // if (m_save.isLoaded()) {
+    //     setWindowTitle(QString("RPGSaveEditor - %1").arg(m_save.filePath()));
+    // } else {
+    //     setWindowTitle("RPGSaveEditor");
+    // }
 }
 
-void MainWindow::setStatus(const QString& msg)
-{
+void MainWindow::setStatus(const QString& msg){
     LOG_INFO("Status: {}", msg.toStdString());
     m_statusLabel->setText(msg);
+}
+
+// --- Close ---
+
+bool MainWindow::confirmDiscard(){
+    if (!m_bDirty) return true;
+
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Warning);
+    box.setWindowTitle("Unsaved Changes");
+    box.setText("There are unsaved changes.");
+    box.setInformativeText("Do you want to save before closing?");
+    box.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+    box.setDefaultButton(QMessageBox::Save);
+    box.exec();
+
+    auto aBtn = box.standardButton(box.clickedButton());
+    if (aBtn == QMessageBox::Save) {
+        onSave();
+        return !m_bDirty;
+    }
+    return aBtn == QMessageBox::Discard;
+}
+
+void MainWindow::onClose(){
+    if (!m_save.isLoaded()) return;
+    if (!confirmDiscard()) return;
+
+    m_save.reset();
+    m_bDirty = false;
+    m_saveDir.clear();
+    m_gameRoot.clear();
+    m_warningLabel->hide();
+    m_stacked->setCurrentWidget(m_welcomeWidget);
+    setTitle();
+    setStatus("Ready");
+}
+
+void MainWindow::closeEvent(QCloseEvent* event){
+    if (!m_save.isLoaded() || confirmDiscard()) {
+        event->accept();
+    } else {
+        event->ignore();
+    }
 }

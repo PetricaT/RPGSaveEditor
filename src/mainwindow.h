@@ -21,10 +21,12 @@ public:
 protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void onSave();
     void onSaveAs();
+    void onClose();
     void onLoadGameData();
     void onLoadTranslations();
     void onExportTranslationTemplate();
@@ -52,6 +54,7 @@ private:
 
     void setTitle();
     void setStatus(const QString& msg);
+    bool confirmDiscard();
 
     int askUserForSaveSlot(const QStringList& saveFiles);
     void updateLocaleCombo();
@@ -59,6 +62,7 @@ private:
     RPGSave m_save;
     QString m_saveDir;
     QString m_gameRoot;
+    bool m_bDirty = false;
 
     // UI elements
     QTabWidget* m_tabs = nullptr;

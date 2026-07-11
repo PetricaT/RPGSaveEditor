@@ -7,19 +7,19 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPalette>
 #include <QSplitter>
 #include <QVBoxLayout>
 
-void MainWindow::setupTabs()
-{
+void MainWindow::setupTabs(){
     // --- Variables Tab ---
-    auto* varTab = new QWidget;
-    auto* varLayout = new QVBoxLayout(varTab);
+    auto* aVarTab = new QWidget;
+    auto* aVarLayout = new QVBoxLayout(aVarTab);
 
     m_varFilter = new QLineEdit;
     m_varFilter->setPlaceholderText("Filter variables...");
     m_varFilter->setClearButtonEnabled(true);
-    varLayout->addWidget(m_varFilter);
+    aVarLayout->addWidget(m_varFilter);
 
     m_varTable = new QTableWidget;
     m_varTable->setColumnCount(3);
@@ -30,33 +30,33 @@ void MainWindow::setupTabs()
     m_varTable->setSelectionBehavior(QTableWidget::SelectRows);
     m_varTable->setAlternatingRowColors(true);
     m_varTable->verticalHeader()->setVisible(false);
-    varLayout->addWidget(m_varTable);
+    aVarLayout->addWidget(m_varTable);
 
     connect(m_varFilter, &QLineEdit::textChanged, this, [this](const QString& text) {
         for (int i = 0; i < m_varTable->rowCount(); ++i) {
-            bool match = text.isEmpty();
-            if (!match) {
-                for (int c = 0; c < m_varTable->columnCount(); ++c) {
-                    auto* item = m_varTable->item(i, c);
-                    if (item && item->text().contains(text, Qt::CaseInsensitive)) {
-                        match = true;
+            bool bMatch = text.isEmpty();
+            if (!bMatch) {
+                for (int iC = 0; iC < m_varTable->columnCount(); ++iC) {
+                    auto* aItem = m_varTable->item(i, iC);
+                    if (aItem && aItem->text().contains(text, Qt::CaseInsensitive)) {
+                        bMatch = true;
                         break;
                     }
                 }
             }
-            m_varTable->setRowHidden(i, !match);
+            m_varTable->setRowHidden(i, !bMatch);
         }
     });
 
-    connect(m_varTable, &QTableWidget::cellChanged, this, [this](int row, int column) {
-        if (column != 2) return;
-        auto* item = m_varTable->item(row, column);
-        if (!item) return;
-        int id = m_varTable->item(row, 0)->text().toInt();
-        QString name = m_varTable->item(row, 1) ? m_varTable->item(row, 1)->text() : QString();
-        QString valStr = item->text();
+    connect(m_varTable, &QTableWidget::cellChanged, this, [this](int iRow, int iColumn) {
+        if (iColumn != 2) return;
+        auto* aItem = m_varTable->item(iRow, iColumn);
+        if (!aItem) return;
+        int iId = m_varTable->item(iRow, 0)->text().toInt();
+        QString name = m_varTable->item(iRow, 1) ? m_varTable->item(iRow, 1)->text() : QString();
+        QString valStr = aItem->text();
 
-        json oldVal = m_save.getVariable(id);
+        json oldVal = m_save.getVariable(iId);
         QString oldStr;
         if (oldVal.is_null()) oldStr = "null";
         else if (oldVal.is_boolean()) oldStr = oldVal.get<bool>() ? "true" : "false";
@@ -66,27 +66,27 @@ void MainWindow::setupTabs()
         else oldStr = "...";
 
         LOG_INFO("Editing variable with name: \"{}\", value: \"{}\", new value: \"{}\"", name.toStdString(), oldStr.toStdString(), valStr.toStdString());
-        bool ok = false;
-        int64_t intVal = valStr.toLongLong(&ok);
-        if (ok) { m_save.setVariable(id, intVal); return; }
-        double dblVal = valStr.toDouble(&ok);
-        if (ok) { m_save.setVariable(id, dblVal); return; }
-        if (valStr.toLower() == "true") { m_save.setVariable(id, true); return; }
-        if (valStr.toLower() == "false") { m_save.setVariable(id, false); return; }
-        if (valStr.toLower() == "null") { m_save.setVariable(id, nullptr); return; }
-        m_save.setVariable(id, valStr.toStdString());
+        bool bOk = false;
+        int64_t iIntVal = valStr.toLongLong(&bOk);
+        if (bOk) { m_save.setVariable(iId, iIntVal); return; }
+        double dDblVal = valStr.toDouble(&bOk);
+        if (bOk) { m_save.setVariable(iId, dDblVal); return; }
+        if (valStr.toLower() == "true") { m_save.setVariable(iId, true); return; }
+        if (valStr.toLower() == "false") { m_save.setVariable(iId, false); return; }
+        if (valStr.toLower() == "null") { m_save.setVariable(iId, nullptr); return; }
+        m_save.setVariable(iId, valStr.toStdString());
     });
 
-    m_tabs->addTab(varTab, "Variables");
+    m_tabs->addTab(aVarTab, "Variables");
 
     // --- Switches Tab ---
-    auto* swTab = new QWidget;
-    auto* swLayout = new QVBoxLayout(swTab);
+    auto* aSwTab = new QWidget;
+    auto* aSwLayout = new QVBoxLayout(aSwTab);
 
     m_swFilter = new QLineEdit;
     m_swFilter->setPlaceholderText("Filter switches...");
     m_swFilter->setClearButtonEnabled(true);
-    swLayout->addWidget(m_swFilter);
+    aSwLayout->addWidget(m_swFilter);
 
     m_swTable = new QTableWidget;
     m_swTable->setColumnCount(3);
@@ -97,63 +97,63 @@ void MainWindow::setupTabs()
     m_swTable->setSelectionBehavior(QTableWidget::SelectRows);
     m_swTable->setAlternatingRowColors(true);
     m_swTable->verticalHeader()->setVisible(false);
-    swLayout->addWidget(m_swTable);
+    aSwLayout->addWidget(m_swTable);
 
     connect(m_swFilter, &QLineEdit::textChanged, this, [this](const QString& text) {
         for (int i = 0; i < m_swTable->rowCount(); ++i) {
-            bool match = text.isEmpty();
-            if (!match) {
-                for (int c = 0; c < m_swTable->columnCount(); ++c) {
-                    auto* item = m_swTable->item(i, c);
-                    if (item && item->text().contains(text, Qt::CaseInsensitive)) {
-                        match = true;
+            bool bMatch = text.isEmpty();
+            if (!bMatch) {
+                for (int iC = 0; iC < m_swTable->columnCount(); ++iC) {
+                    auto* aItem = m_swTable->item(i, iC);
+                    if (aItem && aItem->text().contains(text, Qt::CaseInsensitive)) {
+                        bMatch = true;
                         break;
                     }
                 }
             }
-            m_swTable->setRowHidden(i, !match);
+            m_swTable->setRowHidden(i, !bMatch);
         }
     });
 
-    connect(m_swTable, &QTableWidget::cellChanged, this, [this](int row, int column) {
-        if (column != 2) return;
-        auto* item = m_swTable->item(row, column);
-        if (!item) return;
-        int id = m_swTable->item(row, 0)->text().toInt();
-        QString name = m_swTable->item(row, 1) ? m_swTable->item(row, 1)->text() : QString();
-        bool newVal = item->text().toLower() == "true" || item->text() == "1";
-        bool oldVal = m_save.getSwitch(id);
-        LOG_INFO("Editing switch with name: \"{}\", value: \"{}\", new value: \"{}\"", name.toStdString(), oldVal ? "true" : "false", newVal ? "true" : "false");
-        m_save.setSwitch(id, newVal);
+    connect(m_swTable, &QTableWidget::cellChanged, this, [this](int iRow, int iColumn) {
+        if (iColumn != 2) return;
+        auto* aItem = m_swTable->item(iRow, iColumn);
+        if (!aItem) return;
+        int iId = m_swTable->item(iRow, 0)->text().toInt();
+        QString name = m_swTable->item(iRow, 1) ? m_swTable->item(iRow, 1)->text() : QString();
+        bool bNewVal = aItem->text().toLower() == "true" || aItem->text() == "1";
+        bool bOldVal = m_save.getSwitch(iId);
+        LOG_INFO("Editing switch with name: \"{}\", value: \"{}\", new value: \"{}\"", name.toStdString(), bOldVal ? "true" : "false", bNewVal ? "true" : "false");
+        m_save.setSwitch(iId, bNewVal);
     });
 
-    m_tabs->addTab(swTab, "Switches");
+    m_tabs->addTab(aSwTab, "Switches");
 
     // --- Party Tab ---
-    auto* partyTab = new QWidget;
-    auto* partyLayout = new QVBoxLayout(partyTab);
+    auto* aPartyTab = new QWidget;
+    auto* aPartyLayout = new QVBoxLayout(aPartyTab);
 
-    auto* goldLayout = new QHBoxLayout;
-    goldLayout->addWidget(new QLabel("Gold:"));
-    auto* goldEdit = new QLineEdit;
-    goldEdit->setObjectName("goldEdit");
-    goldLayout->addWidget(goldEdit);
-    goldLayout->addStretch();
-    goldLayout->addWidget(new QLabel("Steps:"));
-    auto* stepsEdit = new QLineEdit;
-    stepsEdit->setObjectName("stepsEdit");
-    goldLayout->addWidget(stepsEdit);
-    goldLayout->addStretch();
-    partyLayout->addLayout(goldLayout);
+    auto* aGoldLayout = new QHBoxLayout;
+    aGoldLayout->addWidget(new QLabel("Gold:"));
+    auto* aGoldEdit = new QLineEdit;
+    aGoldEdit->setObjectName("goldEdit");
+    aGoldLayout->addWidget(aGoldEdit);
+    aGoldLayout->addStretch();
+    aGoldLayout->addWidget(new QLabel("Steps:"));
+    auto* aStepsEdit = new QLineEdit;
+    aStepsEdit->setObjectName("stepsEdit");
+    aGoldLayout->addWidget(aStepsEdit);
+    aGoldLayout->addStretch();
+    aPartyLayout->addLayout(aGoldLayout);
 
-    connect(goldEdit, &QLineEdit::editingFinished, this, [this, goldEdit]() {
-        m_save.setGold(goldEdit->text().toInt());
+    connect(aGoldEdit, &QLineEdit::editingFinished, this, [this, aGoldEdit]() {
+        m_save.setGold(aGoldEdit->text().toInt());
     });
-    connect(stepsEdit, &QLineEdit::editingFinished, this, [this, stepsEdit]() {
-        m_save.setSteps(stepsEdit->text().toInt());
+    connect(aStepsEdit, &QLineEdit::editingFinished, this, [this, aStepsEdit]() {
+        m_save.setSteps(aStepsEdit->text().toInt());
     });
 
-    auto* partySplitter = new QSplitter(Qt::Vertical);
+    auto* aPartySplitter = new QSplitter(Qt::Vertical);
 
     m_itemTable = new QTableWidget;
     m_itemTable->setColumnCount(3);
@@ -162,12 +162,12 @@ void MainWindow::setupTabs()
     m_itemTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     m_itemTable->setAlternatingRowColors(true);
     m_itemTable->verticalHeader()->setVisible(false);
-    auto* iw = new QWidget;
-    auto* il = new QVBoxLayout(iw);
-    il->setContentsMargins(0, 0, 0, 0);
-    il->addWidget(new QLabel("Items"));
-    il->addWidget(m_itemTable);
-    partySplitter->addWidget(iw);
+    auto* aIw = new QWidget;
+    auto* aIl = new QVBoxLayout(aIw);
+    aIl->setContentsMargins(0, 0, 0, 0);
+    aIl->addWidget(new QLabel("Items"));
+    aIl->addWidget(m_itemTable);
+    aPartySplitter->addWidget(aIw);
 
     m_weaponTable = new QTableWidget;
     m_weaponTable->setColumnCount(3);
@@ -176,12 +176,12 @@ void MainWindow::setupTabs()
     m_weaponTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     m_weaponTable->setAlternatingRowColors(true);
     m_weaponTable->verticalHeader()->setVisible(false);
-    auto* ww = new QWidget;
-    auto* wl = new QVBoxLayout(ww);
-    wl->setContentsMargins(0, 0, 0, 0);
-    wl->addWidget(new QLabel("Weapons"));
-    wl->addWidget(m_weaponTable);
-    partySplitter->addWidget(ww);
+    auto* aWw = new QWidget;
+    auto* aWl = new QVBoxLayout(aWw);
+    aWl->setContentsMargins(0, 0, 0, 0);
+    aWl->addWidget(new QLabel("Weapons"));
+    aWl->addWidget(m_weaponTable);
+    aPartySplitter->addWidget(aWw);
 
     m_armorTable = new QTableWidget;
     m_armorTable->setColumnCount(3);
@@ -190,74 +190,74 @@ void MainWindow::setupTabs()
     m_armorTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     m_armorTable->setAlternatingRowColors(true);
     m_armorTable->verticalHeader()->setVisible(false);
-    auto* aw = new QWidget;
-    auto* al = new QVBoxLayout(aw);
-    al->setContentsMargins(0, 0, 0, 0);
-    al->addWidget(new QLabel("Armors"));
-    al->addWidget(m_armorTable);
-    partySplitter->addWidget(aw);
+    auto* aAw = new QWidget;
+    auto* aAl = new QVBoxLayout(aAw);
+    aAl->setContentsMargins(0, 0, 0, 0);
+    aAl->addWidget(new QLabel("Armors"));
+    aAl->addWidget(m_armorTable);
+    aPartySplitter->addWidget(aAw);
 
-    auto* partyFilterLayout = new QHBoxLayout;
-    partyFilterLayout->addWidget(new QLabel("Search:"));
+    auto* aPartyFilterLayout = new QHBoxLayout;
+    aPartyFilterLayout->addWidget(new QLabel("Search:"));
     m_partyFilter = new QLineEdit;
     m_partyFilter->setPlaceholderText("Fuzzy search items, weapons, armors...");
-    partyFilterLayout->addWidget(m_partyFilter);
-    partyLayout->addLayout(partyFilterLayout);
+    aPartyFilterLayout->addWidget(m_partyFilter);
+    aPartyLayout->addLayout(aPartyFilterLayout);
 
     connect(m_partyFilter, &QLineEdit::textChanged, this, &MainWindow::applyPartyFilter);
 
-    partyLayout->addWidget(partySplitter);
+    aPartyLayout->addWidget(aPartySplitter);
 
-    auto applyMultiQuantity = [](QTableWidget* table, int triggeredRow, int column, int val) {
+    auto aApplyMultiQuantity = [](QTableWidget* table, int iTriggeredRow, int iColumn, int iVal) {
         QSet<int> applied;
-        applied.insert(triggeredRow);
-        auto selItems = table->selectedItems();
-        if (selItems.size() <= 1) return;
+        applied.insert(iTriggeredRow);
+        auto aSelItems = table->selectedItems();
+        if (aSelItems.size() <= 1) return;
         table->blockSignals(true);
-        for (auto* selItem : selItems) {
-            if (selItem->column() == column && !applied.contains(selItem->row())) {
-                applied.insert(selItem->row());
-                selItem->setText(QString::number(val));
+        for (auto* aSelItem : aSelItems) {
+            if (aSelItem->column() == iColumn && !applied.contains(aSelItem->row())) {
+                applied.insert(aSelItem->row());
+                aSelItem->setText(QString::number(iVal));
             }
         }
         table->blockSignals(false);
     };
 
-    auto saveSelItems = [this](QTableWidget* table, const std::function<void(int,int)>& saveFn) {
-        for (auto* selItem : table->selectedItems()) {
-            if (selItem->column() == 2) {
-                int id = table->item(selItem->row(), 0)->text().toInt();
-                saveFn(id, selItem->text().toInt());
+    auto aSaveSelItems = [this](QTableWidget* table, const std::function<void(int,int)>& saveFn) {
+        for (auto* aSelItem : table->selectedItems()) {
+            if (aSelItem->column() == 2) {
+                int iId = table->item(aSelItem->row(), 0)->text().toInt();
+                saveFn(iId, aSelItem->text().toInt());
             }
         }
     };
 
-    connect(m_itemTable, &QTableWidget::cellChanged, this, [this, applyMultiQuantity, saveSelItems](int row, int column) {
-        if (column != 2) return;
-        auto* item = m_itemTable->item(row, column);
-        if (!item) return;
-        int val = item->text().toInt();
-        applyMultiQuantity(m_itemTable, row, column, val);
-        saveSelItems(m_itemTable, [this](int id, int qty) { m_save.setItem(id, qty); });
+    connect(m_itemTable, &QTableWidget::cellChanged, this, [this, aApplyMultiQuantity, aSaveSelItems](int iRow, int iColumn) {
+        if (iColumn != 2) return;
+        auto* aItem = m_itemTable->item(iRow, iColumn);
+        if (!aItem) return;
+        int iVal = aItem->text().toInt();
+        aApplyMultiQuantity(m_itemTable, iRow, iColumn, iVal);
+        aSaveSelItems(m_itemTable, [this](int iId, int iQty) { m_save.setItem(iId, iQty); });
     });
-    connect(m_weaponTable, &QTableWidget::cellChanged, this, [this, applyMultiQuantity, saveSelItems](int row, int column) {
-        if (column != 2) return;
-        auto* item = m_weaponTable->item(row, column);
-        if (!item) return;
-        int val = item->text().toInt();
-        applyMultiQuantity(m_weaponTable, row, column, val);
-        saveSelItems(m_weaponTable, [this](int id, int qty) { m_save.setWeapon(id, qty); });
+    connect(m_weaponTable, &QTableWidget::cellChanged, this, [this, aApplyMultiQuantity, aSaveSelItems](int iRow, int iColumn) {
+        if (iColumn != 2) return;
+        auto* aItem = m_weaponTable->item(iRow, iColumn);
+        if (!aItem) return;
+        int iVal = aItem->text().toInt();
+        aApplyMultiQuantity(m_weaponTable, iRow, iColumn, iVal);
+        aSaveSelItems(m_weaponTable, [this](int iId, int iQty) { m_save.setWeapon(iId, iQty); });
     });
-    connect(m_armorTable, &QTableWidget::cellChanged, this, [this, applyMultiQuantity, saveSelItems](int row, int column) {
-        if (column != 2) return;
-        auto* item = m_armorTable->item(row, column);
-        if (!item) return;
-        int val = item->text().toInt();
-        applyMultiQuantity(m_armorTable, row, column, val);
-        saveSelItems(m_armorTable, [this](int id, int qty) { m_save.setArmor(id, qty); });
+    connect(m_armorTable, &QTableWidget::cellChanged, this, [this, aApplyMultiQuantity, aSaveSelItems](int iRow, int iColumn) {
+        if (iColumn != 2) return;
+        auto* aItem = m_armorTable->item(iRow, iColumn);
+        if (!aItem) return;
+        int iVal = aItem->text().toInt();
+        aApplyMultiQuantity(m_armorTable, iRow, iColumn, iVal);
+        aSaveSelItems(m_armorTable, [this](int iId, int iQty) { m_save.setArmor(iId, iQty); });
     });
 
-    m_tabs->addTab(partyTab, "Party");
+    m_tabs->addTab(aPartyTab, "Party");
 
     // --- Actors Tab ---
     m_actorTable = new QTableWidget;
@@ -268,23 +268,23 @@ void MainWindow::setupTabs()
     m_actorTable->verticalHeader()->setVisible(false);
     m_tabs->addTab(m_actorTable, "Actors");
 
-    connect(m_actorTable, &QTableWidget::cellChanged, this, [this](int row, int column) {
-        if (column <= 1 || column == 8) return;
-        int id = m_actorTable->item(row, 0)->text().toInt();
-        json actor = m_save.getActor(id);
+    connect(m_actorTable, &QTableWidget::cellChanged, this, [this](int iRow, int iColumn) {
+        if (iColumn <= 1 || iColumn == 8) return;
+        int iId = m_actorTable->item(iRow, 0)->text().toInt();
+        json actor = m_save.getActor(iId);
         if (actor.is_null()) return;
-        auto* item = m_actorTable->item(row, column);
-        if (!item) return;
-        int val = item->text().toInt();
-        switch (column) {
-            case 2: actor["_hp"] = val; break;
-            case 3: actor["_maxHp"] = val; break;
-            case 4: actor["_mp"] = val; break;
-            case 5: actor["_maxMp"] = val; break;
-            case 6: actor["_tp"] = val; break;
-            case 7: actor["_level"] = val; break;
+        auto* aItem = m_actorTable->item(iRow, iColumn);
+        if (!aItem) return;
+        int iVal = aItem->text().toInt();
+        switch (iColumn) {
+            case 2: actor["_hp"] = iVal; break;
+            case 3: actor["_maxHp"] = iVal; break;
+            case 4: actor["_mp"] = iVal; break;
+            case 5: actor["_maxMp"] = iVal; break;
+            case 6: actor["_tp"] = iVal; break;
+            case 7: actor["_level"] = iVal; break;
         }
-        m_save.setActor(id, actor);
+        m_save.setActor(iId, actor);
     });
 
     // --- JSON Tree Tab ---
@@ -296,8 +296,7 @@ void MainWindow::setupTabs()
 
 // --- Tab population ---
 
-void MainWindow::populateAllTabs()
-{
+void MainWindow::populateAllTabs(){
     LOG_DEBUG("populateAllTabs");
     populateVariablesTab();
     populateSwitchesTab();
@@ -307,31 +306,30 @@ void MainWindow::populateAllTabs()
     m_stacked->setCurrentWidget(m_tabs);
 }
 
-void MainWindow::populateVariablesTab()
-{
+void MainWindow::populateVariablesTab(){
     LOG_DEBUG("populateVariablesTab");
     m_varTable->blockSignals(true);
     m_varTable->setRowCount(0);
 
-    int count = m_save.variableCount();
-    for (int i = 0; i < count; ++i) {
+    int iCount = m_save.variableCount();
+    for (int i = 0; i < iCount; ++i) {
         json val = m_save.getVariable(i);
         QString name = m_save.variableName(i);
-        bool hasName = !name.startsWith("Var ");
-        if (!hasName && (val.is_null() || (val.is_number() && val.get<double>() == 0)))
+        bool bHasName = !name.startsWith("Var ");
+        if (!bHasName && (val.is_null() || (val.is_number() && val.get<double>() == 0)))
             continue;
 
-        int row = m_varTable->rowCount();
-        m_varTable->insertRow(row);
+        int iRow = m_varTable->rowCount();
+        m_varTable->insertRow(iRow);
 
-        auto* idItem = new QTableWidgetItem(QString::number(i));
-        idItem->setFlags(idItem->flags() & ~Qt::ItemIsEditable);
-        m_varTable->setItem(row, 0, idItem);
+        auto* aIdItem = new QTableWidgetItem(QString::number(i));
+        aIdItem->setFlags(aIdItem->flags() & ~Qt::ItemIsEditable);
+        m_varTable->setItem(iRow, 0, aIdItem);
 
-        auto* nameItem = new QTableWidgetItem(name);
-        nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
-        if (hasName) nameItem->setForeground(QColor(100, 180, 255));
-        m_varTable->setItem(row, 1, nameItem);
+        auto* aNameItem = new QTableWidgetItem(name);
+        aNameItem->setFlags(aNameItem->flags() & ~Qt::ItemIsEditable);
+        if (bHasName) aNameItem->setForeground(m_varTable->palette().color(QPalette::Link));
+        m_varTable->setItem(iRow, 1, aNameItem);
 
         QString valStr;
         if (val.is_null()) valStr = "null";
@@ -341,174 +339,171 @@ void MainWindow::populateVariablesTab()
         else if (val.is_string()) valStr = QString::fromStdString(val.get<std::string>());
         else valStr = "...";
 
-        m_varTable->setItem(row, 2, new QTableWidgetItem(valStr));
+        m_varTable->setItem(iRow, 2, new QTableWidgetItem(valStr));
     }
     m_varTable->resizeColumnsToContents();
     m_varTable->blockSignals(false);
 }
 
-void MainWindow::populateSwitchesTab()
-{
+void MainWindow::populateSwitchesTab(){
     LOG_DEBUG("populateSwitchesTab");
     m_swTable->blockSignals(true);
     m_swTable->setRowCount(0);
 
-    int count = m_save.switchCount();
-    for (int i = 0; i < count; ++i) {
-        bool val = m_save.getSwitch(i);
+    int iCount = m_save.switchCount();
+    for (int i = 0; i < iCount; ++i) {
+        bool bVal = m_save.getSwitch(i);
         QString name = m_save.switchName(i);
-        bool hasName = !name.startsWith("Switch ");
-        if (!hasName && !val) continue;
+        bool bHasName = !name.startsWith("Switch ");
+        if (!bHasName && !bVal) continue;
 
-        int row = m_swTable->rowCount();
-        m_swTable->insertRow(row);
+        int iRow = m_swTable->rowCount();
+        m_swTable->insertRow(iRow);
 
-        auto* idItem = new QTableWidgetItem(QString::number(i));
-        idItem->setFlags(idItem->flags() & ~Qt::ItemIsEditable);
-        m_swTable->setItem(row, 0, idItem);
+        auto* aIdItem = new QTableWidgetItem(QString::number(i));
+        aIdItem->setFlags(aIdItem->flags() & ~Qt::ItemIsEditable);
+        m_swTable->setItem(iRow, 0, aIdItem);
 
-        auto* nameItem = new QTableWidgetItem(name);
-        nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
-        if (hasName) nameItem->setForeground(QColor(100, 180, 255));
-        m_swTable->setItem(row, 1, nameItem);
+        auto* aNameItem = new QTableWidgetItem(name);
+        aNameItem->setFlags(aNameItem->flags() & ~Qt::ItemIsEditable);
+        if (bHasName) aNameItem->setForeground(m_swTable->palette().color(QPalette::Link));
+        m_swTable->setItem(iRow, 1, aNameItem);
 
-        m_swTable->setItem(row, 2, new QTableWidgetItem(val ? "true" : "false"));
+        m_swTable->setItem(iRow, 2, new QTableWidgetItem(bVal ? "true" : "false"));
     }
     m_swTable->resizeColumnsToContents();
     m_swTable->blockSignals(false);
 }
 
-void MainWindow::populatePartyTab()
-{
+void MainWindow::populatePartyTab(){
     LOG_DEBUG("populatePartyTab");
-    auto* goldEdit = findChild<QLineEdit*>("goldEdit");
-    auto* stepsEdit = findChild<QLineEdit*>("stepsEdit");
-    if (goldEdit) goldEdit->setText(QString::number(m_save.gold()));
-    if (stepsEdit) stepsEdit->setText(QString::number(m_save.steps()));
+    auto* aGoldEdit = findChild<QLineEdit*>("goldEdit");
+    auto* aStepsEdit = findChild<QLineEdit*>("stepsEdit");
+    if (aGoldEdit) aGoldEdit->setText(QString::number(m_save.gold()));
+    if (aStepsEdit) aStepsEdit->setText(QString::number(m_save.steps()));
 
     m_itemTable->blockSignals(true);
     m_itemTable->setRowCount(0);
-    auto items = m_save.items();
-    for (auto it = items.constBegin(); it != items.constEnd(); ++it) {
-        int row = m_itemTable->rowCount();
-        m_itemTable->insertRow(row);
-        auto* idItem = new QTableWidgetItem(QString::number(it.key()));
-        idItem->setFlags(idItem->flags() & ~Qt::ItemIsEditable);
-        m_itemTable->setItem(row, 0, idItem);
-        auto* nameItem = new QTableWidgetItem(m_save.itemName(it.key()));
-        nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
-        m_itemTable->setItem(row, 1, nameItem);
-        m_itemTable->setItem(row, 2, new QTableWidgetItem(QString::number(it.value())));
+    auto aItems = m_save.items();
+    for (auto aIt = aItems.constBegin(); aIt != aItems.constEnd(); ++aIt) {
+        int iRow = m_itemTable->rowCount();
+        m_itemTable->insertRow(iRow);
+        auto* aIdItem = new QTableWidgetItem(QString::number(aIt.key()));
+        aIdItem->setFlags(aIdItem->flags() & ~Qt::ItemIsEditable);
+        m_itemTable->setItem(iRow, 0, aIdItem);
+        auto* aNameItem = new QTableWidgetItem(m_save.itemName(aIt.key()));
+        aNameItem->setFlags(aNameItem->flags() & ~Qt::ItemIsEditable);
+        m_itemTable->setItem(iRow, 1, aNameItem);
+        m_itemTable->setItem(iRow, 2, new QTableWidgetItem(QString::number(aIt.value())));
     }
     m_itemTable->resizeColumnsToContents();
     m_itemTable->blockSignals(false);
 
     m_weaponTable->blockSignals(true);
     m_weaponTable->setRowCount(0);
-    auto weapons = m_save.weapons();
-    for (auto it = weapons.constBegin(); it != weapons.constEnd(); ++it) {
-        int row = m_weaponTable->rowCount();
-        m_weaponTable->insertRow(row);
-        auto* idItem = new QTableWidgetItem(QString::number(it.key()));
-        idItem->setFlags(idItem->flags() & ~Qt::ItemIsEditable);
-        m_weaponTable->setItem(row, 0, idItem);
-        auto* nameItem = new QTableWidgetItem(m_save.weaponName(it.key()));
-        nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
-        m_weaponTable->setItem(row, 1, nameItem);
-        m_weaponTable->setItem(row, 2, new QTableWidgetItem(QString::number(it.value())));
+    auto aWeapons = m_save.weapons();
+    for (auto aIt = aWeapons.constBegin(); aIt != aWeapons.constEnd(); ++aIt) {
+        int iRow = m_weaponTable->rowCount();
+        m_weaponTable->insertRow(iRow);
+        auto* aIdItem = new QTableWidgetItem(QString::number(aIt.key()));
+        aIdItem->setFlags(aIdItem->flags() & ~Qt::ItemIsEditable);
+        m_weaponTable->setItem(iRow, 0, aIdItem);
+        auto* aNameItem = new QTableWidgetItem(m_save.weaponName(aIt.key()));
+        aNameItem->setFlags(aNameItem->flags() & ~Qt::ItemIsEditable);
+        m_weaponTable->setItem(iRow, 1, aNameItem);
+        m_weaponTable->setItem(iRow, 2, new QTableWidgetItem(QString::number(aIt.value())));
     }
     m_weaponTable->resizeColumnsToContents();
     m_weaponTable->blockSignals(false);
 
     m_armorTable->blockSignals(true);
     m_armorTable->setRowCount(0);
-    auto armors = m_save.armors();
-    for (auto it = armors.constBegin(); it != armors.constEnd(); ++it) {
-        int row = m_armorTable->rowCount();
-        m_armorTable->insertRow(row);
-        auto* idItem = new QTableWidgetItem(QString::number(it.key()));
-        idItem->setFlags(idItem->flags() & ~Qt::ItemIsEditable);
-        m_armorTable->setItem(row, 0, idItem);
-        auto* nameItem = new QTableWidgetItem(m_save.armorName(it.key()));
-        nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
-        m_armorTable->setItem(row, 1, nameItem);
-        m_armorTable->setItem(row, 2, new QTableWidgetItem(QString::number(it.value())));
+    auto aArmors = m_save.armors();
+    for (auto aIt = aArmors.constBegin(); aIt != aArmors.constEnd(); ++aIt) {
+        int iRow = m_armorTable->rowCount();
+        m_armorTable->insertRow(iRow);
+        auto* aIdItem = new QTableWidgetItem(QString::number(aIt.key()));
+        aIdItem->setFlags(aIdItem->flags() & ~Qt::ItemIsEditable);
+        m_armorTable->setItem(iRow, 0, aIdItem);
+        auto* aNameItem = new QTableWidgetItem(m_save.armorName(aIt.key()));
+        aNameItem->setFlags(aNameItem->flags() & ~Qt::ItemIsEditable);
+        m_armorTable->setItem(iRow, 1, aNameItem);
+        m_armorTable->setItem(iRow, 2, new QTableWidgetItem(QString::number(aIt.value())));
     }
     m_armorTable->resizeColumnsToContents();
     m_armorTable->blockSignals(false);
 }
 
-void MainWindow::populateActorsTab()
-{
+void MainWindow::populateActorsTab(){
     LOG_DEBUG("populateActorsTab");
     m_actorTable->blockSignals(true);
     m_actorTable->setRowCount(0);
 
-    auto safeNum = [](const json& obj, const char* key, int fallback) -> int {
+    auto aSafeNum = [](const json& obj, const char* key, int iFallback) -> int {
         try {
-            if (!obj.contains(key)) return fallback;
-            const auto& val = obj[key];
-            if (val.is_number_integer()) return val.get<int>();
-            if (val.is_number_unsigned()) return static_cast<int>(val.get<uint64_t>());
-            if (val.is_number_float()) return static_cast<int>(val.get<double>());
-            return fallback;
-        } catch (...) { return fallback; }
+            if (!obj.contains(key)) return iFallback;
+            const auto& aVal = obj[key];
+            if (aVal.is_number_integer()) return aVal.get<int>();
+            if (aVal.is_number_unsigned()) return static_cast<int>(aVal.get<uint64_t>());
+            if (aVal.is_number_float()) return static_cast<int>(aVal.get<double>());
+            return iFallback;
+        } catch (...) { return iFallback; }
     };
 
-    auto safeExp = [](const json& obj, int fallback) -> int {
+    auto aSafeExp = [](const json& obj, int iFallback) -> int {
         try {
-            if (!obj.contains("_exp")) return fallback;
-            const auto& exp = obj["_exp"];
-            if (exp.is_number()) return exp.get<int>();
-            if (exp.is_object() && exp.contains("1"))
-                return exp["1"].is_number() ? exp["1"].get<int>() : fallback;
-            return fallback;
-        } catch (...) { return fallback; }
+            if (!obj.contains("_exp")) return iFallback;
+            const auto& aExp = obj["_exp"];
+            if (aExp.is_number()) return aExp.get<int>();
+            if (aExp.is_object() && aExp.contains("1"))
+                return aExp["1"].is_number() ? aExp["1"].get<int>() : iFallback;
+            return iFallback;
+        } catch (...) { return iFallback; }
     };
 
-    int maxId = m_save.maxActorId();
-    if (maxId <= 0) {
-        for (int id = 1; id < 100; ++id) {
-            json actor = m_save.getActor(id);
+    int iMaxId = m_save.maxActorId();
+    if (iMaxId <= 0) {
+        for (int iId = 1; iId < 100; ++iId) {
+            json actor = m_save.getActor(iId);
             if (actor.is_null() || !actor.is_object()) continue;
-            int row = m_actorTable->rowCount();
-            m_actorTable->insertRow(row);
-            auto addCell = [&](int col, const QVariant& val, bool editable = false) {
-                auto* item = new QTableWidgetItem(val.toString());
-                if (!editable) item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-                m_actorTable->setItem(row, col, item);
+            int iRow = m_actorTable->rowCount();
+            m_actorTable->insertRow(iRow);
+            auto aAddCell = [&](int iCol, const QVariant& val, bool bEditable = false) {
+                auto* aItem = new QTableWidgetItem(val.toString());
+                if (!bEditable) aItem->setFlags(aItem->flags() & ~Qt::ItemIsEditable);
+                m_actorTable->setItem(iRow, iCol, aItem);
             };
-            addCell(0, id);
-            addCell(1, m_save.actorName(id));
-            addCell(2, safeNum(actor, "_hp", 0), true);
-            addCell(3, safeNum(actor, "_maxHp", 0), true);
-            addCell(4, safeNum(actor, "_mp", 0), true);
-            addCell(5, safeNum(actor, "_maxMp", 0), true);
-            addCell(6, safeNum(actor, "_tp", 0), true);
-            addCell(7, safeNum(actor, "_level", 0), true);
-            addCell(8, safeExp(actor, 0));
+            aAddCell(0, iId);
+            aAddCell(1, m_save.actorName(iId));
+            aAddCell(2, aSafeNum(actor, "_hp", 0), true);
+            aAddCell(3, aSafeNum(actor, "_maxHp", 0), true);
+            aAddCell(4, aSafeNum(actor, "_mp", 0), true);
+            aAddCell(5, aSafeNum(actor, "_maxMp", 0), true);
+            aAddCell(6, aSafeNum(actor, "_tp", 0), true);
+            aAddCell(7, aSafeNum(actor, "_level", 0), true);
+            aAddCell(8, aSafeExp(actor, 0));
         }
     } else {
-        for (int id = 1; id <= maxId; ++id) {
-            if (!m_save.actorName(id).startsWith("Actor ")) {
-                json actor = m_save.getActor(id);
-                int row = m_actorTable->rowCount();
-                m_actorTable->insertRow(row);
-                auto addCell = [&](int col, const QVariant& val, bool editable = false) {
-                    auto* item = new QTableWidgetItem(val.toString());
-                    if (!editable) item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-                    m_actorTable->setItem(row, col, item);
+        for (int iId = 1; iId <= iMaxId; ++iId) {
+            if (!m_save.actorName(iId).startsWith("Actor ")) {
+                json actor = m_save.getActor(iId);
+                int iRow = m_actorTable->rowCount();
+                m_actorTable->insertRow(iRow);
+                auto aAddCell = [&](int iCol, const QVariant& val, bool bEditable = false) {
+                    auto* aItem = new QTableWidgetItem(val.toString());
+                    if (!bEditable) aItem->setFlags(aItem->flags() & ~Qt::ItemIsEditable);
+                    m_actorTable->setItem(iRow, iCol, aItem);
                 };
-                bool hasSaveData = actor.is_object() && !actor.is_null();
-                addCell(0, id);
-                addCell(1, m_save.actorName(id));
-                addCell(2, hasSaveData ? safeNum(actor, "_hp", 0) : 0, true);
-                addCell(3, hasSaveData ? safeNum(actor, "_maxHp", 0) : 0, true);
-                addCell(4, hasSaveData ? safeNum(actor, "_mp", 0) : 0, true);
-                addCell(5, hasSaveData ? safeNum(actor, "_maxMp", 0) : 0, true);
-                addCell(6, hasSaveData ? safeNum(actor, "_tp", 0) : 0, true);
-                addCell(7, hasSaveData ? safeNum(actor, "_level", 0) : 0, true);
-                addCell(8, hasSaveData ? safeExp(actor, 0) : 0);
+                bool bHasSaveData = actor.is_object() && !actor.is_null();
+                aAddCell(0, iId);
+                aAddCell(1, m_save.actorName(iId));
+                aAddCell(2, bHasSaveData ? aSafeNum(actor, "_hp", 0) : 0, true);
+                aAddCell(3, bHasSaveData ? aSafeNum(actor, "_maxHp", 0) : 0, true);
+                aAddCell(4, bHasSaveData ? aSafeNum(actor, "_mp", 0) : 0, true);
+                aAddCell(5, bHasSaveData ? aSafeNum(actor, "_maxMp", 0) : 0, true);
+                aAddCell(6, bHasSaveData ? aSafeNum(actor, "_tp", 0) : 0, true);
+                aAddCell(7, bHasSaveData ? aSafeNum(actor, "_level", 0) : 0, true);
+                aAddCell(8, bHasSaveData ? aSafeExp(actor, 0) : 0);
             }
         }
     }
@@ -516,8 +511,7 @@ void MainWindow::populateActorsTab()
     m_actorTable->blockSignals(false);
 }
 
-void MainWindow::refreshJsonTree()
-{
+void MainWindow::refreshJsonTree(){
     LOG_DEBUG("refreshJsonTree");
     m_jsonTree->clear();
     if (!m_save.isLoaded()) return;
@@ -525,55 +519,54 @@ void MainWindow::refreshJsonTree()
     const json& root = m_save.root();
     std::function<void(QTreeWidgetItem*, const QString&, const json&)> addJsonNode;
     addJsonNode = [&](QTreeWidgetItem* parent, const QString& key, const json& val) {
-        auto* item = new QTreeWidgetItem(parent);
-        item->setText(0, key);
+        auto* aItem = new QTreeWidgetItem(parent);
+        aItem->setText(0, key);
 
         if (val.is_object()) {
-            item->setText(1, QString("{ %1 items }").arg(val.size()));
-            for (auto it = val.begin(); it != val.end(); ++it)
-                addJsonNode(item, QString::fromStdString(it.key()), *it);
+            aItem->setText(1, QString("{ %1 items }").arg(val.size()));
+            for (auto aIt = val.begin(); aIt != val.end(); ++aIt)
+                addJsonNode(aItem, QString::fromStdString(aIt.key()), *aIt);
         } else if (val.is_array()) {
-            item->setText(1, QString("[ %1 items ]").arg(val.size()));
+            aItem->setText(1, QString("[ %1 items ]").arg(val.size()));
             for (size_t i = 0; i < val.size(); ++i)
-                addJsonNode(item, QString("[%1]").arg(i), val[i]);
+                addJsonNode(aItem, QString("[%1]").arg(i), val[i]);
         } else if (val.is_string()) {
-            item->setText(1, QString::fromStdString(val.get<std::string>()));
+            aItem->setText(1, QString::fromStdString(val.get<std::string>()));
         } else if (val.is_number_integer()) {
-            item->setText(1, QString::number(val.get<int64_t>()));
+            aItem->setText(1, QString::number(val.get<int64_t>()));
         } else if (val.is_number_float()) {
-            item->setText(1, QString::number(val.get<double>(), 'g', 6));
+            aItem->setText(1, QString::number(val.get<double>(), 'g', 6));
         } else if (val.is_boolean()) {
-            item->setText(1, val.get<bool>() ? "true" : "false");
+            aItem->setText(1, val.get<bool>() ? "true" : "false");
         } else if (val.is_null()) {
-            item->setText(1, "null");
+            aItem->setText(1, "null");
         }
     };
 
-    for (auto it = root.begin(); it != root.end(); ++it)
-        addJsonNode(m_jsonTree->invisibleRootItem(), QString::fromStdString(it.key()), *it);
+    for (auto aIt = root.begin(); aIt != root.end(); ++aIt)
+        addJsonNode(m_jsonTree->invisibleRootItem(), QString::fromStdString(aIt.key()), *aIt);
 }
 
 // --- Filter ---
 
-void MainWindow::applyPartyFilter()
-{
+void MainWindow::applyPartyFilter(){
     QString query = m_partyFilter->text().trimmed();
     if (query.isEmpty()) {
-        for (auto* t : {m_itemTable, m_weaponTable, m_armorTable}) {
-            for (int r = 0; r < t->rowCount(); ++r)
-                t->setRowHidden(r, false);
+        for (auto* aT : {m_itemTable, m_weaponTable, m_armorTable}) {
+            for (int iR = 0; iR < aT->rowCount(); ++iR)
+                aT->setRowHidden(iR, false);
         }
         return;
     }
 
     std::string qStd = query.toLower().toStdString();
-    for (auto* t : {m_itemTable, m_weaponTable, m_armorTable}) {
-        for (int r = 0; r < t->rowCount(); ++r) {
-            auto* nameItem = t->item(r, 1);
-            if (!nameItem) { t->setRowHidden(r, true); continue; }
-            std::string name = nameItem->text().toLower().toStdString();
-            double score = rapidfuzz::fuzz::partial_ratio(qStd, name);
-            t->setRowHidden(r, score < 60.0);
+    for (auto* aT : {m_itemTable, m_weaponTable, m_armorTable}) {
+        for (int iR = 0; iR < aT->rowCount(); ++iR) {
+            auto* aNameItem = aT->item(iR, 1);
+            if (!aNameItem) { aT->setRowHidden(iR, true); continue; }
+            std::string name = aNameItem->text().toLower().toStdString();
+            double dScore = rapidfuzz::fuzz::partial_ratio(qStd, name);
+            aT->setRowHidden(iR, dScore < 60.0);
         }
     }
 }
