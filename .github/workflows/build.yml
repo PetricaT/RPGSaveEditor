@@ -2,10 +2,9 @@ name: Build & Release
 
 on:
   push:
-    tags: [ "v*.*.0" ]
+    tags: ["v*.*.0"]
 
 jobs:
-
   linux:
     runs-on: ubuntu-latest
     steps:
@@ -76,29 +75,32 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
+    
       - name: Install Qt6
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.7'
-          arch: 'win64_msvc2019_64'
-          modules: 'qtimageformats'
+          version: "6.7"
+          arch: "win64_msvc2019_64"
+          modules: "qtimageformats"
           cache: true
-
+        
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
-
+        
       - name: Build
         run: cmake --build build --config Release
-
+        
+      - name: Deploy Qt dependencies
+        run: windeployqt.exe --release --no-translations build\Release\RPGSaveEditor.exe
+        
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: RPGSaveEditor-windows
-          path: build/Release/RPGSaveEditor.exe
+          path: build/Release/ # whole folder now, not just the exe
 
   release:
-    needs: [ linux, appimage, windows ]
+    needs: [linux, appimage, windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
