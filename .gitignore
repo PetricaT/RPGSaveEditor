@@ -23,3 +23,5 @@ __pycache__/
 *.rpgsave
 tests/smoke_test
 tests/test_json_compat
+aqtinstall.log
+*.log

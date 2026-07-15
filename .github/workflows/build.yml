@@ -99,6 +99,49 @@ jobs:
           name: RPGSaveEditor-windows
           path: build/Release/ # whole folder now, not just the exe
 
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.7"
+          arch: "clang_64"
+          modules: "qtimageformats"
+          cache: true
+
+      - name: Configure
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_INSTALL_PREFIX=$PWD/staging
+
+      - name: Build
+        run: cmake --build build --parallel $(sysctl -n hw.ncpu)
+
+      - name: Install
+        run: cmake --install build
+
+      - name: Deploy Qt into .app bundle
+        run: macdeployqt staging/bin/RPGSaveEditor.app -no-translations
+
+      - name: Create DMG
+        run: |
+          mkdir -p dmg-stuff
+          cp -R staging/bin/RPGSaveEditor.app dmg-stuff/
+          ln -s /Applications dmg-stuff/Applications
+          hdiutil create -volname "RPGSaveEditor" \
+            -srcfolder dmg-stuff -ov -format UDZO \
+            RPGSaveEditor.dmg
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RPGSaveEditor-macos
+          path: RPGSaveEditor.dmg
+
   release:
     needs: [linux, appimage, windows]
     runs-on: ubuntu-latest
