@@ -16,7 +16,8 @@ static int try_write_stoi(const std::string& s, int iFallback = 0){
 
 enum class SaveFormat {
     Unknown,
-    MvMz,       // .rpgsave, .rmmzsave (LZString base64)
+    Mv,         // .rpgsave (LZString compressToBase64)
+    Mz,         // .rmmzsave (pako deflate, UTF-8 encoded byte stream)
     // Future formats:
     // VxAce,     // .rvdata2 (Ruby Marshal)
     // Vx,        // .rvdata  (Ruby Marshal)
@@ -26,8 +27,10 @@ enum class SaveFormat {
 
 static SaveFormat detectFormat(const QString& filePath){
     QString suffix = QFileInfo(filePath).suffix().toLower();
-    if (suffix == "rpgsave" || suffix == "rmmzsave")
-        return SaveFormat::MvMz;
+    if (suffix == "rpgsave")
+        return SaveFormat::Mv;
+    if (suffix == "rmmzsave")
+        return SaveFormat::Mz;
     return SaveFormat::Unknown;
 }
 
@@ -56,8 +59,11 @@ bool RPGSave::saveToFile(const QString& filePath){
     std::string encoded;
     try {
         switch (format) {
-        case SaveFormat::MvMz:
-            encoded = encodeSaveData(jsonStr);
+        case SaveFormat::Mv:
+            encoded = encodeSaveData_MV(jsonStr);
+            break;
+        case SaveFormat::Mz:
+            encoded = encodeSaveData_MZ(jsonStr);
             break;
         default:
             break;
@@ -70,7 +76,7 @@ bool RPGSave::saveToFile(const QString& filePath){
     }
 
     QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    if (!file.open(QIODevice::WriteOnly)) {
         m_error = QString("Cannot write file: %1").arg(file.errorString());
         LOG_ERROR("{}", m_error.toStdString());
         return false;

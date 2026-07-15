@@ -19,7 +19,8 @@ static int try_load_stoi(const std::string& s, int iFallback = 0){
 
 enum class SaveFormat {
     Unknown,
-    MvMz,       // .rpgsave, .rmmzsave (LZString base64)
+    Mv,         // .rpgsave (LZString compressToBase64)
+    Mz,         // .rmmzsave (pako deflate, UTF-8 encoded byte stream)
     // Future formats:
     // VxAce,     // .rvdata2 (Ruby Marshal)
     // Vx,        // .rvdata  (Ruby Marshal)
@@ -29,8 +30,10 @@ enum class SaveFormat {
 
 static SaveFormat detectFormat(const QString& filePath){
     QString suffix = QFileInfo(filePath).suffix().toLower();
-    if (suffix == "rpgsave" || suffix == "rmmzsave")
-        return SaveFormat::MvMz;
+    if (suffix == "rpgsave")
+        return SaveFormat::Mv;
+    if (suffix == "rmmzsave")
+        return SaveFormat::Mz;
     // Future: add more formats here
     return SaveFormat::Unknown;
 }
@@ -48,7 +51,7 @@ bool RPGSave::loadFromFile(const QString& filePath){
     }
 
     QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (!file.open(QIODevice::ReadOnly)) {
         m_error = QString("Cannot open file: %1").arg(file.errorString());
         LOG_ERROR("{}", m_error.toStdString());
         return false;
@@ -61,8 +64,11 @@ bool RPGSave::loadFromFile(const QString& filePath){
     std::string jsonStr;
     try {
         switch (format) {
-        case SaveFormat::MvMz:
-            jsonStr = decodeSaveData(rawData);
+        case SaveFormat::Mv:
+            jsonStr = decodeSaveData_MV(rawData);
+            break;
+        case SaveFormat::Mz:
+            jsonStr = decodeSaveData_MZ(rawData);
             break;
         default:
             break;
@@ -82,7 +88,13 @@ bool RPGSave::loadFromFile(const QString& filePath){
 
     std::string sanitized;
     try {
-        sanitized = sanitizeJson(jsonStr);
+        // MZ JSON from pako is already clean; sanitizeJson is only needed
+        // for MV saves which embed raw control chars in string values.
+        if (format == SaveFormat::Mv) {
+            sanitized = sanitizeJson(jsonStr);
+        } else {
+            sanitized = std::move(jsonStr);
+        }
     } catch (const std::exception& e) {
         m_error = QString("Failed to sanitize JSON: %1").arg(e.what());
         LOG_ERROR("{}", m_error.toStdString());
@@ -90,7 +102,7 @@ bool RPGSave::loadFromFile(const QString& filePath){
     }
 
     try {
-        m_root = json::parse(sanitized);
+        m_root = json::parse(sanitized.cbegin(), sanitized.cend());
     } catch (const json::parse_error& e) {
         m_error = QString("JSON parse error: %1").arg(e.what());
         LOG_ERROR("{}", m_error.toStdString());
@@ -100,6 +112,7 @@ bool RPGSave::loadFromFile(const QString& filePath){
     LOG_INFO("Save loaded: {} variables, {} switches",
              variableCount(), switchCount());
     m_filePath = filePath;
+    m_bMZFormat = (format == SaveFormat::Mz);
     m_bLoaded = true;
     return true;
 }

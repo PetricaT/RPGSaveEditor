@@ -11,8 +11,15 @@ CMakeFiles/
 # OS
 .DS_Store
 Thumbs.db
+.directory
 
 # Python
 __pycache__/
 *.pyc
 .venv/
+
+# Smoke testing
+*.rmmzsave
+*.rpgsave
+tests/smoke_test
+tests/test_json_compat

@@ -3,6 +3,7 @@
 #include "logger.h"
 
 #include <QFile>
+#include <zlib.h>
 
 static int try_stoi(const std::string& s, int iFallback = 0){
     try {
@@ -18,6 +19,7 @@ RPGSave::RPGSave(QObject* parent)
 
 void RPGSave::reset(){
     m_bLoaded = false;
+    m_bMZFormat = false;
     m_filePath.clear();
     m_error.clear();
     m_root = json();
@@ -57,7 +59,10 @@ std::vector<json> RPGSave::extractSparseArray(const json& obj){
     return {};
 }
 
-json RPGSave::buildSparseArray(const std::vector<json>& data){
+json RPGSave::buildSparseArray(const std::vector<json>& data) const{
+    if (m_bMZFormat) {
+        return data;
+    }
     json result;
     result["@a"] = data;
     result["@c"] = static_cast<int>(data.size());
@@ -189,9 +194,9 @@ static lzstring::string utf8_to_utf16(const std::string& input){
     return result;
 }
 
-// --- LZString encode/decode (MV/MZ) ---
+// --- LZString encode/decode (MV) ---
 
-std::string RPGSave::decodeSaveData(const std::string& raw){
+std::string RPGSave::decodeSaveData_MV(const std::string& raw){
     lzstring::string input;
     input.reserve(raw.size());
     for (char c : raw) {
@@ -202,7 +207,7 @@ std::string RPGSave::decodeSaveData(const std::string& raw){
     return utf16_to_utf8(decompressed);
 }
 
-std::string RPGSave::encodeSaveData(const std::string& jsonStr){
+std::string RPGSave::encodeSaveData_MV(const std::string& jsonStr){
     lzstring::string input = utf8_to_utf16(jsonStr);
     lzstring::string compressed = lzstring::compressToBase64(input);
 
@@ -211,5 +216,114 @@ std::string RPGSave::encodeSaveData(const std::string& jsonStr){
     for (auto aCh : compressed) {
         result.push_back(static_cast<char>(aCh));
     }
+    return result;
+}
+
+// --- Pako/zlib encode/decode (MZ) ---
+
+std::string RPGSave::decodeSaveData_MZ(const std::string& raw){
+    // RPG Maker MZ writes pako.deflate output as a string where each char is a
+    // byte value (0-255). fs.writeFileSync encodes this as UTF-8, so bytes >= 128
+    // become multi-byte UTF-8 sequences. To recover the original deflate stream,
+    // we decode UTF-8 and extract each code point as a byte.
+    std::vector<unsigned char> compressed;
+    compressed.reserve(raw.size());
+    for (size_t i = 0; i < raw.size(); ) {
+        unsigned char c = static_cast<unsigned char>(raw[i]);
+        uint32_t cp = 0;
+        if (c < 0x80) {
+            cp = c;
+            ++i;
+        } else if ((c & 0xE0) == 0xC0) {
+            cp = c & 0x1F;
+            if (i + 1 >= raw.size()) break;
+            cp = (cp << 6) | (static_cast<unsigned char>(raw[i + 1]) & 0x3F);
+            i += 2;
+        } else if ((c & 0xF0) == 0xE0) {
+            cp = c & 0x0F;
+            if (i + 2 >= raw.size()) break;
+            cp = (cp << 6) | (static_cast<unsigned char>(raw[i + 1]) & 0x3F);
+            cp = (cp << 6) | (static_cast<unsigned char>(raw[i + 2]) & 0x3F);
+            i += 3;
+        } else if ((c & 0xF8) == 0xF0) {
+            cp = c & 0x07;
+            if (i + 3 >= raw.size()) break;
+            cp = (cp << 6) | (static_cast<unsigned char>(raw[i + 1]) & 0x3F);
+            cp = (cp << 6) | (static_cast<unsigned char>(raw[i + 2]) & 0x3F);
+            cp = (cp << 6) | (static_cast<unsigned char>(raw[i + 3]) & 0x3F);
+            i += 4;
+        } else {
+            ++i;
+            continue;
+        }
+        compressed.push_back(static_cast<unsigned char>(cp & 0xFF));
+    }
+
+    // pako.deflate produces zlib format (windowBits=15 by default)
+    z_stream strm{};
+    int ret = inflateInit(&strm);
+    if (ret != Z_OK) return {};
+
+    strm.next_in = compressed.data();
+    strm.avail_in = static_cast<uInt>(compressed.size());
+
+    std::string result;
+    result.reserve(compressed.size() * 4);
+    unsigned char outBuf[16384];
+
+    do {
+        strm.next_out = outBuf;
+        strm.avail_out = sizeof(outBuf);
+        ret = inflate(&strm, Z_NO_FLUSH);
+        if (ret != Z_OK && ret != Z_STREAM_END) {
+            inflateEnd(&strm);
+            LOG_ERROR("MZ zlib inflate failed: {} (ret={})", strm.msg ? strm.msg : "unknown", ret);
+            return {};
+        }
+        size_t have = sizeof(outBuf) - strm.avail_out;
+        result.append(reinterpret_cast<char*>(outBuf), have);
+    } while (ret != Z_STREAM_END);
+
+    inflateEnd(&strm);
+    result.resize(strm.total_out);
+    return result;
+}
+
+std::string RPGSave::encodeSaveData_MZ(const std::string& jsonStr){
+    // pako.deflate(json, {to: "string", level: 1}) uses zlib format with level 1
+    z_stream strm{};
+    int ret = deflateInit(&strm, 1);
+    if (ret != Z_OK) return {};
+
+    strm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(jsonStr.data()));
+    strm.avail_in = static_cast<uInt>(jsonStr.size());
+
+    std::string result;
+    unsigned char outBuf[16384];
+
+    do {
+        strm.next_out = outBuf;
+        strm.avail_out = sizeof(outBuf);
+        ret = deflate(&strm, Z_FINISH);
+        if (ret != Z_OK && ret != Z_STREAM_END) {
+            deflateEnd(&strm);
+            LOG_ERROR("MZ zlib deflate failed: {}", strm.msg ? strm.msg : "unknown");
+            return {};
+        }
+        size_t have = sizeof(outBuf) - strm.avail_out;
+        // Each output byte becomes a character with that code point (0-255).
+        // We write it as UTF-8 to match pako's {to:"string"} + fs.writeFileSync behavior.
+        for (size_t i = 0; i < have; ++i) {
+            unsigned char b = outBuf[i];
+            if (b < 0x80) {
+                result += static_cast<char>(b);
+            } else {
+                result += static_cast<char>(0xC0 | (b >> 6));
+                result += static_cast<char>(0x80 | (b & 0x3F));
+            }
+        }
+    } while (ret != Z_STREAM_END);
+
+    deflateEnd(&strm);
     return result;
 }

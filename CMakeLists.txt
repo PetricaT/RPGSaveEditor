@@ -30,6 +30,9 @@ FetchContent_Declare(rapidfuzz
   GIT_TAG v3.3.3)
 FetchContent_MakeAvailable(rapidfuzz)
 
+# zlib (for RPG Maker MZ pako deflate)
+find_package(ZLIB REQUIRED)
+
 # --- Sources ---
 set(SOURCES
     src/main.cpp
@@ -71,6 +74,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     spdlog::spdlog
     rapidfuzz::rapidfuzz
     nlohmann_json::nlohmann_json
+    ZLIB::ZLIB
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT WIN32)

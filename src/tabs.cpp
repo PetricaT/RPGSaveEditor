@@ -566,7 +566,7 @@ void MainWindow::applyPartyFilter(){
             if (!aNameItem) { aT->setRowHidden(iR, true); continue; }
             std::string name = aNameItem->text().toLower().toStdString();
             double dScore = rapidfuzz::fuzz::partial_ratio(qStd, name);
-            aT->setRowHidden(iR, dScore < 60.0);
+            aT->setRowHidden(iR, dScore < m_fuzzyThreshold);
         }
     }
 }

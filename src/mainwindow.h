@@ -4,9 +4,11 @@
 #include "json_model.h"
 
 #include <QComboBox>
+#include <QDoubleSpinBox>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMainWindow>
+#include <QSlider>
 #include <QStackedWidget>
 #include <QTabWidget>
 #include <QTableWidget>
@@ -36,6 +38,7 @@ private slots:
 private:
     void setupUI();
     void setupMenuBar();
+    void setupSettings();
     void setupTabs();
     void setupStatusBar();
 
@@ -63,8 +66,11 @@ private:
     QString m_saveDir;
     QString m_gameRoot;
     bool m_bDirty = false;
+    double m_fuzzyThreshold = 81.0;
 
     // UI elements
+    QSlider* m_fuzzySlider = nullptr;
+    QLabel* m_fuzzyValueLabel = nullptr;
     QTabWidget* m_tabs = nullptr;
     QTableWidget* m_varTable = nullptr;
     QLineEdit* m_varFilter = nullptr;

@@ -25,6 +25,13 @@ QStringList findRPGSaveFiles(const QString& dirPath){
 }
 
 QString getSaveSlotPath(const QString& saveDir, int iSlot){
+    // Detect whether the save directory uses .rmmzsave or .rpgsave
+    QDir dir(saveDir);
+    const auto aEntries = dir.entryInfoList({"file*.*save"}, QDir::Files);
+    for (const auto& entry : aEntries) {
+        if (entry.fileName().endsWith(".rmmzsave"))
+            return QString("%1/file%2.rmmzsave").arg(saveDir, QString::number(iSlot));
+    }
     return QString("%1/file%2.rpgsave").arg(saveDir, QString::number(iSlot));
 }
 
@@ -33,12 +40,13 @@ int getNextSaveSlot(const QString& saveDir){
     if (!dir.exists()) return 1;
 
     int iMaxSlot = 0;
-    const auto aEntries = dir.entryInfoList({"file*.rpgsave"}, QDir::Files, QDir::Name);
+    const auto aEntries = dir.entryInfoList({"file*.rpgsave", "file*.rmmzsave"}, QDir::Files, QDir::Name);
     for (const auto& entry : aEntries) {
         if (entry.fileName().endsWith(".bak")) continue;
         QString name = entry.fileName();
         name.remove("file");
         name.remove(".rpgsave");
+        name.remove(".rmmzsave");
         bool bOk = false;
         int iSlot = name.toInt(&bOk);
         if (bOk && iSlot > iMaxSlot) iMaxSlot = iSlot;

@@ -21,6 +21,7 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QSlider>
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QTabWidget>
@@ -32,9 +33,10 @@ MainWindow::MainWindow(QWidget* parent)
     LOG_INFO("MainWindow constructor");
     setAcceptDrops(true);
     setWindowIcon(QIcon(":/appicon.png"));
-    connect(&m_save, &RPGSave::modified, this, [this]() { m_bDirty = true; });
+    connect(&m_save, &RPGSave::modified, this, [this]() { m_bDirty = true; setTitle(); });
     setupUI();
     setupMenuBar();
+    setupSettings();
     setupStatusBar();
     setTitle();
     LOG_INFO("MainWindow ready");
@@ -62,7 +64,7 @@ void MainWindow::setupUI(){
     aSubTitle->setFont(subTitleFont);
     aSubTitle->setForegroundRole(QPalette::PlaceholderText);
     // Supported file formats
-    auto* aFileFormats = new QLabel("Supported file formats: .rpgsave");
+    auto* aFileFormats = new QLabel("Supported file formats: .rpgsave .rmmzsave");
     aFileFormats->setAlignment(Qt::AlignCenter);
     QFont fileFormatFont = aFileFormats->font();
     fileFormatFont.setPointSize(12);
@@ -146,6 +148,39 @@ void MainWindow::setupMenuBar(){
     auto* aHelpMenu = menuBar()->addMenu("&Help");
     auto* aAboutAction = aHelpMenu->addAction("&About");
     connect(aAboutAction, &QAction::triggered, this, &MainWindow::onAbout);
+}
+
+void MainWindow::setupSettings(){
+    auto* aSettingsMenu = menuBar()->addMenu("&Settings");
+
+    auto* aFuzzyLabel = new QAction("Fuzzy Search Threshold:", this);
+    aFuzzyLabel->setDisabled(true);
+    aSettingsMenu->addAction(aFuzzyLabel);
+
+    m_fuzzySlider = new QSlider(Qt::Horizontal);
+    m_fuzzySlider->setRange(0, 100);
+    m_fuzzySlider->setValue(static_cast<int>(m_fuzzyThreshold));
+    m_fuzzySlider->setTickPosition(QSlider::TicksBelow);
+    m_fuzzySlider->setTickInterval(10);
+    m_fuzzySlider->setFixedWidth(200);
+
+    m_fuzzyValueLabel = new QLabel(QString::number(m_fuzzyThreshold, 'f', 0) + "%");
+
+    auto* aSliderWidget = new QWidget;
+    auto* aSliderLayout = new QHBoxLayout(aSliderWidget);
+    aSliderLayout->setContentsMargins(8, 2, 8, 2);
+    aSliderLayout->addWidget(m_fuzzySlider);
+    aSliderLayout->addWidget(m_fuzzyValueLabel);
+
+    auto* aSliderAction = new QWidgetAction(this);
+    aSliderAction->setDefaultWidget(aSliderWidget);
+    aSettingsMenu->addAction(aSliderAction);
+
+    connect(m_fuzzySlider, &QSlider::valueChanged, this, [this](int val) {
+        m_fuzzyThreshold = static_cast<double>(val);
+        m_fuzzyValueLabel->setText(QString::number(val) + "%");
+        if (m_save.isLoaded()) applyPartyFilter();
+    });
 }
 
 void MainWindow::setupStatusBar(){
@@ -247,12 +282,11 @@ int MainWindow::askUserForSaveSlot(const QStringList& saves){
 }
 
 void MainWindow::setTitle(){
-    setWindowTitle("RPGSaveEditor");
-    // if (m_save.isLoaded()) {
-    //     setWindowTitle(QString("RPGSaveEditor - %1").arg(m_save.filePath()));
-    // } else {
-    //     setWindowTitle("RPGSaveEditor");
-    // }
+    if (m_bDirty) {
+        setWindowTitle("RPGSaveEditor (*)");
+    } else {
+        setWindowTitle("RPGSaveEditor");
+    }
 }
 
 void MainWindow::setStatus(const QString& msg){

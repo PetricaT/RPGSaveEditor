@@ -94,13 +94,18 @@ signals:
     void localeChanged(const QString& locale);
 
 private:
-    // Extract sparse array data from RPG Maker's @a/@c format into a flat vector
+    // Extract sparse array data from RPG Maker's @a/@c format into a flat vector.
+    // Handles both MV (@a/@c object) and MZ (plain array) formats.
     static std::vector<json> extractSparseArray(const json& obj);
-    static json buildSparseArray(const std::vector<json>& data);
+    // Build array data for writing back. MZ uses plain arrays, MV uses @a/@c.
+    json buildSparseArray(const std::vector<json>& data) const;
 
-    // Decode the raw file bytes (LZString compressToBase64)
-    static std::string decodeSaveData(const std::string& raw);
-    static std::string encodeSaveData(const std::string& jsonStr);
+    // MV: LZString compressToBase64
+    static std::string decodeSaveData_MV(const std::string& raw);
+    static std::string encodeSaveData_MV(const std::string& jsonStr);
+    // MZ: pako deflate (UTF-8 encoded byte stream -> zlib inflate)
+    static std::string decodeSaveData_MZ(const std::string& raw);
+    static std::string encodeSaveData_MZ(const std::string& jsonStr);
 
     // RPG Maker MV puts raw control chars (0x00-0x1F) inside JSON strings for
     // in-game text formatting (\C[color], etc). JSON spec requires them escaped.
@@ -111,6 +116,7 @@ private:
     void rebuildDisplayNames();
 
     bool m_bLoaded = false;
+    bool m_bMZFormat = false;  // true = RPG Maker MZ (pako/zlib), false = RPG Maker MV (LZString)
     QString m_filePath;
     QString m_error;
     json m_root;
