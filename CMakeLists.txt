@@ -31,7 +31,21 @@ FetchContent_Declare(rapidfuzz
 FetchContent_MakeAvailable(rapidfuzz)
 
 # zlib (for RPG Maker MZ pako deflate)
-find_package(ZLIB REQUIRED)
+find_package(ZLIB QUIET)
+if(NOT ZLIB_FOUND)
+  FetchContent_Declare(zlib
+    GIT_REPOSITORY https://github.com/madler/zlib.git
+    GIT_TAG v1.3.1
+  )
+  FetchContent_MakeAvailable(zlib)
+  if(NOT TARGET ZLIB::ZLIB)
+    if(TARGET zlibstatic)
+      add_library(ZLIB::ZLIB ALIAS zlibstatic)
+    elseif(TARGET zlib)
+      add_library(ZLIB::ZLIB ALIAS zlib)
+    endif()
+  endif()
+endif()
 
 # --- Sources ---
 set(SOURCES
