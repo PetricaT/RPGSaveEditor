@@ -77,7 +77,26 @@ if(WIN32)
     set(APP_RC app.rc)
 endif()
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${APP_RC})
+if(APPLE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum macOS version")
+    set(APP_ICNS assets/icon.icns)
+endif()
+
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${APP_RC} ${APP_ICNS})
+
+if(APPLE)
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_BUNDLE_NAME "${PROJECT_NAME}"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.rpgsaveeditor.app"
+    MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+    MACOSX_BUNDLE_ICON_FILE "icon.icns"
+  )
+  set_source_files_properties(assets/icon.icns PROPERTIES
+    MACOSX_PACKAGE_LOCATION Resources
+  )
+endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 

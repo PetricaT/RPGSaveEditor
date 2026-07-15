@@ -143,7 +143,7 @@ jobs:
           path: RPGSaveEditor.dmg
 
   release:
-    needs: [linux, appimage, windows]
+    needs: [linux, appimage, windows, macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -171,3 +171,4 @@ jobs:
             artifacts/RPGSaveEditor-x86_64.AppImage/RPGSaveEditor-x86_64.AppImage
             RPGSaveEditor-linux.tar.gz
             RPGSaveEditor-windows.zip
+            artifacts/RPGSaveEditor-macos/RPGSaveEditor.dmg
